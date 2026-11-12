@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circulation Department | The Fourth & Fuckup Tribune</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #d8cfb7;
+    color: #29251f;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .paper {
+    max-width: 850px;
+    margin: 30px auto;
+    padding: 35px;
+    background: #f5eedb;
+    border: 1px solid #9d927a;
+    box-shadow: 5px 7px 0 #b5a98d;
+  }
+  .eyebrow {
+    text-align: center;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  h1 {
+    text-align: center;
+    font-size: clamp(32px, 7vw, 58px);
+    line-height: 1;
+    margin: 16px 0;
+    text-transform: uppercase;
+  }
+  .subtitle {
+    text-align: center;
+    font-style: italic;
+  }
+  .rule {
+    border: 0;
+    border-top: 4px double #29251f;
+    margin: 22px 0;
+  }
+  .price {
+    text-align: center;
+    border: 2px solid #29251f;
+    padding: 18px;
+    margin: 25px 0;
+  }
+  .price strong {
+    display: block;
+    font-size: 32px;
+  }
+  h2 {
+    font-size: 24px;
+    text-transform: uppercase;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+    margin: 18px 0 7px;
+  }
+  input[type="email"], input[type="text"], textarea {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #817761;
+    background: #fffaf0;
+    color: #29251f;
+    font: 16px Georgia, serif;
+  }
+  textarea {
+    min-height: 130px;
+    resize: vertical;
+  }
+  .small {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .privacy {
+    margin: 25px 0;
+    padding: 18px;
+    border: 1px solid #817761;
+    background: #eee5cf;
+  }
+  .consent {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 18px 0;
+  }
+  .consent input {
+    margin-top: 4px;
+  }
+  button {
+    width: 100%;
+    padding: 16px;
+    background: #29251f;
+    color: #f5eedb;
+    border: 0;
+    font: bold 19px Georgia, serif;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+  .notice {
+    text-align: center;
+    font-size: 13px;
+    margin-top: 15px;
+  }
+  a { color: #29251f; }
+  footer {
+    text-align: center;
+    margin-top: 35px;
+    font-size: 12px;
+  }
+  @media (max-width: 600px) {
+    .paper { margin: 10px; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<main class="paper">
+  <div class="eyebrow">The Fourth & Fuckup Tribune</div>
+  <hr class="rule">
+  <h1>The Circulation Department</h1>
+  <p class="subtitle">Your mistakes. Our headlines.</p>
+  <hr class="rule">
+
+  <div class="price">
+    <div>OFFICIAL SUBSCRIPTION RATE</div>
+    <strong>5¢ PER EDITION</strong>
+    <div>ACTUAL COST: ABSOLUTELY FREE</div>
+  </div>
+
+  <h2>Subscribe & Confess</h2>
+  <p>
+    Receive the latest scandals, catastrophic trades,
+    and managerial incompetence directly in your inbox.
+    Admission requires one embarrassing fantasy football confession.
+  </p>
+
+  <form id="subscription-form">
+    <label for="email">Your Email Address *</label>
+    <input id="email" type="email" maxlength="254"
+           autocomplete="email" required>
+
+    <label for="team">Fantasy Team Name (Optional)</label>
+    <input id="team" type="text" maxlength="100">
+
+    <label for="league">League Name (Optional)</label>
+    <input id="league" type="text" maxlength="100">
+
+    <label for="confession">
+      Your Greatest Fantasy Football Fuckup *
+    </label>
+    <textarea id="confession" maxlength="500" minlength="15"
+      placeholder="The trade, draft pick, or lineup decision that still haunts you..."
+      required></textarea>
+    <p class="small">500 characters maximum. Make it embarrassing.</p>
+
+    <section class="privacy">
+      <strong>A NOTICE FROM THE CIRCULATION DEPARTMENT</strong>
+      <p class="small">
+        Your email address will be used for subscription
+        confirmation, Tribune newsletters, and correspondence
+        about stories you submit. We will not sell, rent,
+        publish, or share subscriber email addresses with
+        other readers. Only authorized editors and necessary
+        email service providers will have access.
+      </p>
+      <p class="small">
+        You may unsubscribe at any time. Confessions may be
+        reviewed as potential story leads, but your name or
+        identifying details will not be published without
+        your permission.
+      </p>
+      <p class="small">
+        The Tribune exposes terrible fantasy decisions,
+        not private information.
+      </p>
+    </section>
+
+    <label class="consent">
+      <input type="checkbox" id="consent" required>
+      <span class="small">
+        I agree to receive The Fourth & Fuckup Tribune
+        by email and understand I can unsubscribe at any time.
+      </span>
+    </label>
+
+    <button type="submit" disabled>
+      SUBSCRIBE & CONFESS — COMING SOON
+    </button>
+    <p class="notice">
+      Subscriptions are not open yet.
+      The Circulation Department is under construction.
+    </p>
+  </form>
+
+  <hr class="rule">
+  <footer>
+    <a href="index.html">Return to the Tribune</a>
+    <p>Reporting the facts. Destroying reputations.</p>
+  </footer>
+</main>
+</body>
+</html>
