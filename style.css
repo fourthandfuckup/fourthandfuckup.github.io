@@ -26,3 +26,6 @@
 .office-frank-portrait img { display: block; width: 112px; height: 132px; object-fit: cover; object-position: center 20%; filter: grayscale(100%); border: 3px double #4b4033; padding: 3px; background: #e8dfca; margin: 0 auto 8px; }
 .office-frank-portrait figcaption { font-family: Georgia, serif; font-weight: bold; font-size: 10px; letter-spacing: .05em; line-height: 1.35; color: #29251f; }
 .office-frank-portrait figcaption span { font-weight: normal; font-size: 9px; }
+
+.tip-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.office-evidence-list{margin:12px 0;padding-left:20px}.office-evidence-list button{margin:3px 0}

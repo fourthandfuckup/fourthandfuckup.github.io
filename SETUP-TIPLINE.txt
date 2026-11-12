@@ -1,0 +1,11 @@
+TIP LINE BUILD — NOT LIVE UNTIL DEPLOYED AND ACTIVATED
+
+1. The updated script.js submits to Supabase Edge Function tribune-submit.
+2. The function lives in supabase/functions/tribune-submit/index.ts and must be deployed with verify_jwt=false because the public site has no logged-in users.
+3. The function requires TRIBUNE_INTAKE_ENABLED=true as a server-side secret. Until then it returns 503 without storing anything.
+4. IMPORTANT BEFORE ACTIVATION: implement and test server-verified CAPTCHA (such as Turnstile) and enforce rate limiting. Origin checks and honeypots alone do not stop automated abuse.
+5. Confirm Supabase Storage bucket tribune-evidence remains PRIVATE. No anonymous storage write policies should be created.
+6. The Editor's Office now includes private screenshot links (60-second signed URLs). Editor membership and storage RLS must remain in place.
+7. Test a sample report with a screenshot end-to-end before inviting public submissions. Delete test records and screenshot afterward.
+8. The website must be uploaded to GitHub Pages separately; this ZIP does not deploy it.
+9. Subscriber emails and Mailing Room are a separate next phase.
