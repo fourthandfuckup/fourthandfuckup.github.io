@@ -1,4 +1,4 @@
-fimport { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const supabase=createClient('https://nlckcelwfcoszbvqyeyr.supabase.co','sb_publishable_CrRNQGAZoc6TtT3wFe3sUg_hoYuupy8');
 const $=id=>document.getElementById(id),notice=$('office-notice'),login=$('office-login'),dashboard=$('office-dashboard');
 const labels={new:'New',investigating:'Under Investigation',awaiting_evidence:'Awaiting Evidence',approved:'Approved',declined:'Declined',published:'Published'};
