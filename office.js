@@ -84,3 +84,15 @@ if (!document.querySelector('#office-dashboard')?.hidden) {
   circulationObserver.disconnect();
   loadCirculation();
 }
+
+
+// Frank's Moderation Desk
+const moderationDesk = document.getElementById('moderation-queue');
+
+function showModerationMessage(message) {
+  if (!moderationDesk) return;
+  moderationDesk.textContent = message;
+}
+
+showModerationMessage('Frank is preparing the moderation records...');
+
