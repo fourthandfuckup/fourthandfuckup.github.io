@@ -111,9 +111,29 @@ async function loadModerationQueue() {
     const pending = data?.pending ?? [];
     const reports = data?.reports ?? [];
 
-    showModerationMessage(
-      `${pending.length} pending comments | ${reports.length} open reports`
-    );
+   showModerationMessage(
+  `${pending.length} pending comments | ${reports.length} open reports`
+);
+
+if (pending.length > 0) {
+  const heading = document.createElement('h3');
+  heading.textContent = 'COMMENTS AWAITING FRANK’S VERDICT';
+  moderationDesk.appendChild(heading);
+
+  pending.forEach(comment => {
+    const entry = document.createElement('div');
+    entry.className = 'moderation-entry';
+
+    const author = document.createElement('strong');
+    author.textContent = comment.author_username || 'Unknown reader';
+
+    const body = document.createElement('p');
+    body.textContent = comment.body;
+
+    entry.append(author, body);
+    moderationDesk.appendChild(entry);
+  });
+}
   } catch (error) {
     showModerationMessage('Unable to load moderation queue: ' + error.message);
   }
