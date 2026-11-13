@@ -96,3 +96,44 @@ function showModerationMessage(message) {
 
 showModerationMessage('Frank is preparing the moderation records...');
 
+async function loadModerationQueue() {
+  showModerationMessage('Checking for comments awaiting review...');
+
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      'tribune-community',
+      { body: { action: 'editor_queue' } }
+    );
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    const pending = data?.pending ?? [];
+    const reports = data?.reports ?? [];
+
+    showModerationMessage(
+      `${pending.length} pending comments | ${reports.length} open reports`
+    );
+  } catch (error) {
+    showModerationMessage('Unable to load moderation queue: ' + error.message);
+  }
+}
+const moderationObserver = new MutationObserver(() => {
+  const dashboard = document.getElementById('office-dashboard');
+
+  if (dashboard && !dashboard.hidden) {
+    moderationObserver.disconnect();
+    loadModerationQueue();
+  }
+});
+
+moderationObserver.observe(document.body, {
+  attributes: true,
+  attributeFilter: ['hidden'],
+  subtree: true
+});
+
+if (!document.getElementById('office-dashboard')?.hidden) {
+  moderationObserver.disconnect();
+  loadModerationQueue();
+}
