@@ -15,10 +15,9 @@ $('office-filter').addEventListener('change',render);
 supabase.auth.onAuthStateChange(()=>{setTimeout(check,0);});check();
 
 async function loadCirculation() {
-  const section = Array.from(document.querySelectorAll('section, div'))
-    .find(el => el.textContent?.includes('Circulation reports are being connected.') &&
-      !Array.from(el.children).some(child =>
-        child.textContent?.includes('Circulation reports are being connected.')));
+  
+const section = Array.from(document.querySelectorAll('section, div')).find(el => el.textContent?.trim() === 'Circulation reports are being connected. Check back soon.');
+
 
   if (!section) return;
 
