@@ -13,3 +13,75 @@ $('office-login-form').addEventListener('submit',async e=>{e.preventDefault();co
 $('office-logout').addEventListener('click',async()=>{await supabase.auth.signOut();await check();});
 $('office-filter').addEventListener('change',render);
 supabase.auth.onAuthStateChange(()=>{setTimeout(check,0);});check();
+
+async function loadCirculation() {
+  const section = Array.from(document.querySelectorAll('section, div'))
+    .find(el => el.textContent?.includes('Circulation reports are being connected.') &&
+      !Array.from(el.children).some(child =>
+        child.textContent?.includes('Circulation reports are being connected.')));
+
+  if (!section) return;
+
+  section.textContent = 'Loading circulation reports...';
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      section.textContent = 'Sign in to view circulation reports.';
+      return;
+    }
+
+    const response = await fetch(
+      'https://nlckcelwfcoszbvqyeyr.supabase.co/functions/v1/tribune-circulation',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': 'sb_publishable_CrRNQGAZoc6TtT3wFe3sUg_hoYuupy8',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      }
+    );
+
+    const report = await response.json();
+    if (!response.ok) throw new Error(report.error || 'Report unavailable');
+
+    section.replaceChildren();
+
+    const summary = document.createElement('p');
+    summary.textContent =
+      `Last 30 days — Visitors: ${report.activeUsers} | Page views: ${report.pageViews} | Sessions: ${report.sessions}`;
+    section.appendChild(summary);
+
+    const heading = document.createElement('h3');
+    heading.textContent = 'Most Read Pages';
+    section.appendChild(heading);
+
+    const list = document.createElement('ol');
+    for (const page of report.popularPages || []) {
+      const item = document.createElement('li');
+      item.textContent = `${page.title}: ${page.views} views`;
+      list.appendChild(item);
+    }
+    section.appendChild(list);
+  } catch (error) {
+    section.textContent = `Circulation report unavailable: ${error.message}`;
+  }
+}
+
+const circulationObserver = new MutationObserver(() => {
+  if (!document.querySelector('#office-dashboard')?.hidden) {
+    circulationObserver.disconnect();
+    loadCirculation();
+  }
+});
+circulationObserver.observe(document.body, {
+  attributes: true,
+  attributeFilter: ['hidden'],
+  subtree: true
+});
+if (!document.querySelector('#office-dashboard')?.hidden) {
+  circulationObserver.disconnect();
+  loadCirculation();
+}
