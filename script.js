@@ -51,7 +51,20 @@ function communityMarkup(){return `<section id="tribune-community" class="tribun
 </section>`}
 
 function communityMessage(id,text,isError=false){const el=document.getElementById(id);if(!el)return;el.textContent=text;el.classList.toggle('is-error',!!isError)}
-async function communityInvoke(body){const {data,error}=await communityClient.functions.invoke('tribune-community',{body});if(error)throw new Error(error.message||'The newsroom service could not be reached.');if(data?.error)throw new Error(data.error);return data}
+async function communityInvoke(body){
+  const {data:sessionData,error:sessionError}=await communityClient.auth.getSession();
+  if(sessionError)throw new Error(sessionError.message||'Could not read your sign-in session.');
+  const token=sessionData?.session?.access_token;
+  if(!token)throw new Error('Your guest session is missing. Sign out, then continue as guest again.');
+  const {data,error}=await communityClient.functions.invoke('tribune-community',{body,headers:{Authorization:`Bearer ${token}`}});
+  if(error){
+    let detail='';
+    if(error.context?.json){try{const response=await error.context.json();detail=response?.error||response?.message||''}catch(_){}}
+    throw new Error(detail||error.message||'The newsroom service could not be reached.');
+  }
+  if(data?.error)throw new Error(data.error);
+  return data;
+}
 function communitySetBusy(form,busy){form.querySelectorAll('button').forEach(b=>b.disabled=busy)}
 function communityShowAuthForm(which){['communityRegisterForm','communityLoginForm','communityUsernameForm'].forEach(id=>{const el=document.getElementById(id);if(el)el.hidden=id!==which})}
 function communityEscape(value){return esc(value)}
