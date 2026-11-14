@@ -29,3 +29,56 @@
 
 .tip-honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
 .office-evidence-list{margin:12px 0;padding-left:20px}.office-evidence-list button{margin:3px 0}
+
+/* Tribune reader community — vintage newspaper treatment */
+.tribune-community{margin:42px 0 10px;border-top:6px double var(--ink);padding-top:25px}
+.community-rule{text-align:center;border-bottom:3px double var(--rule);padding-bottom:18px}
+.community-rule h2,.community-comments-heading h2{font:900 clamp(27px,4vw,38px)/1.1 'Playfair Display',Georgia,serif;margin:8px 0}
+.community-rule p{font-size:13px;color:var(--faded)}
+.community-reactions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.reaction-button{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;min-height:76px;padding:13px;background:#30281e;color:#f6e6c5;border:3px double #8d7957;font:900 13px 'DM Sans',sans-serif;letter-spacing:.8px}
+.reaction-button .reaction-emoji{font-size:27px;line-height:1}
+.reaction-button strong{font-size:18px;min-width:22px}
+.reaction-button.is-selected{background:#7a3427;outline:3px solid #b28b55;outline-offset:2px}
+.community-auth,.community-signed-in{margin:22px 0;padding:20px;border:1px solid #8a7654;background:#f0e0bd88}
+.community-auth h3{font:900 23px 'Playfair Display',serif;margin:0 0 5px}
+.community-auth>p,.community-signed-in p{font-size:13px}
+.community-auth-choices{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0}
+.community-secondary{background:#766044!important;color:#fff2d7!important}
+.community-form{margin:17px 0 0;padding-top:15px;border-top:1px solid #a39170}
+.community-form h4{font:900 17px 'Playfair Display',serif;margin:0 0 12px}
+.community-form label{display:block;margin:10px 0;font:800 11px 'DM Sans',sans-serif;letter-spacing:.5px}
+.community-form input{display:block;width:100%;max-width:470px;margin-top:6px;padding:11px;background:#fff9e9;border:1px solid #8b7858;font:15px Georgia,serif}
+.community-form button{margin:8px 8px 0 0}
+.community-message{font:12px/1.5 'DM Sans',sans-serif;margin:12px 0 0;color:#3f5b32;overflow-wrap:anywhere}
+.community-message.is-error,.community-error{color:#8b3426}
+.community-signed-in{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.community-signed-in p{margin:0 auto 0 0}
+.community-signed-in button{padding:8px 10px;font-size:10px}
+.community-comments{margin-top:32px}
+.community-comments-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:3px double var(--rule);padding-bottom:8px}
+.community-comments-heading h2{font-size:clamp(23px,3.5vw,32px);margin:0}
+.community-comments-heading span{font:800 10px 'DM Sans',sans-serif;letter-spacing:.8px;color:var(--faded)}
+.community-rules{font:12px/1.6 'DM Sans',sans-serif;color:#6a563b;background:#ead8b1;padding:12px 14px;border-left:4px solid var(--accent)}
+.community-comment-form{margin:22px 0;padding:18px;background:#f0dfbc;border:1px solid #a48a62}
+.community-comment-form>label{display:block;font:900 12px 'DM Sans',sans-serif;letter-spacing:.7px}
+.community-comment-form textarea{display:block;width:100%;margin:8px 0 10px;padding:13px;border:1px solid #8b7858;background:#fff9e9;font:15px/1.6 Georgia,serif;resize:vertical}
+.community-form-footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.community-form-footer span{font:11px 'DM Sans',sans-serif;color:var(--faded)}
+.community-reply-notice{margin-bottom:10px;padding:9px;background:#ead8b1;font:800 10px 'DM Sans',sans-serif}
+.community-reply-notice button{padding:5px 8px;margin-left:9px;font-size:9px}
+.community-comments-list{margin-top:20px}
+.community-comment{padding:16px 12px;border-top:1px solid #9b8967}
+.community-comment.is-reply{margin-left:28px;border-left:3px solid #a48a62;padding-left:15px;background:#ead9b555}
+.community-comment.is-frank{background:#e6d1a6;border:2px double #655036;margin:12px 0;padding:16px}
+.community-comment-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.community-comment-head strong{font:900 15px 'Playfair Display',serif}
+.community-comment-head time{margin-left:auto;font:10px 'DM Sans',sans-serif;color:#766044}
+.frank-editor-badge,.community-guest-badge{padding:3px 6px;background:#6d3328;color:#fff0d2;font:900 9px 'DM Sans',sans-serif;letter-spacing:.6px}
+.community-guest-badge{background:#766044}
+.community-comment-body{font:14px/1.7 Georgia,serif;white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0}
+.community-comment-actions{display:flex;gap:8px}
+.community-comment-actions button{padding:6px 9px;font-size:9px;background:#766044}
+.community-empty,.community-loading{padding:20px;text-align:center;font-style:italic;color:#6b5639;background:#f0dfbc}
+.community-loading{margin:0}
+@media(max-width:600px){.community-reactions{gap:8px}.reaction-button{font-size:11px;gap:6px;padding:10px 5px}.community-auth,.community-comment-form{padding:14px}.community-signed-in{align-items:flex-start}.community-signed-in p{width:100%}.community-comment.is-reply{margin-left:12px;padding-left:10px}.community-comments-heading{align-items:flex-start;flex-direction:column;gap:3px}.community-comment-head time{width:100%;margin-left:0}}
