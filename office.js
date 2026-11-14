@@ -156,3 +156,5 @@ deskObserver.observe(dashboard,{attributes:true,attributeFilter:['hidden']});
 if(!dashboard.hidden){deskObserver.disconnect();reloadDesks();}
 // Subscriber counts use editor-only RLS, never expose email addresses in the Office summary.
 async function loadSubscriberCounts(){const el=$('circulation-stats');if(!el)return;try{const data=await editorAction('editor_subscribers');const p=node('p',`SUBSCRIBERS — Total: ${data.total} | Confirmed: ${data.confirmed} | Pending: ${data.pending} | Unsubscribed: ${data.unsubscribed}`,'office-meta');p.id='office-subscriber-summary';el.append(p);}catch(e){el.append(node('p','Subscriber totals unavailable: '+e.message,'office-meta'));}}
+
+export { supabase };
