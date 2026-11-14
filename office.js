@@ -157,4 +157,36 @@ if(!dashboard.hidden){deskObserver.disconnect();reloadDesks();}
 // Subscriber counts use editor-only RLS, never expose email addresses in the Office summary.
 async function loadSubscriberCounts(){const el=$('circulation-stats');if(!el)return;try{const data=await editorAction('editor_subscribers');const p=node('p',`SUBSCRIBERS — Total: ${data.total} | Confirmed: ${data.confirmed} | Pending: ${data.pending} | Unsubscribed: ${data.unsubscribed}`,'office-meta');p.id='office-subscriber-summary';el.append(p);}catch(e){el.append(node('p','Subscriber totals unavailable: '+e.message,'office-meta'));}}
 
+
+const inbox=$('newsroom-inbox'),inboxList=$('newsroom-messages'),inboxFeedback=$('newsroom-feedback');
+const newsroomLabels={new:'New',in_progress:'In Progress',resolved:'Resolved'};
+let newsroomMessages=[];
+async function loadNewsroom(){
+ if(dashboard.hidden)return;
+ inboxFeedback.textContent='Loading newsroom correspondence…';
+ const {data,error}=await supabase.from('tribune_newsroom_messages').select('id,created_at,topic,sender_name,sender_email,subject,message,status,editor_notes').order('created_at',{ascending:false}).limit(100);
+ if(error){inboxFeedback.textContent='Could not load inbox: '+error.message;return;}
+ newsroomMessages=data||[];renderNewsroom();
+}
+function renderNewsroom(){
+ inboxList.replaceChildren();
+ const status=$('newsroom-status').value;
+ const visible=newsroomMessages.filter(m=>status==='all'||m.status===status);
+ inboxFeedback.textContent=visible.length+' message(s) displayed'+(newsroomMessages.length===100?' (latest 100)':'')+'.';
+ if(!visible.length){inboxList.append(node('p','No newsroom messages match this filter.','office-meta'));return;}
+ for(const m of visible){
+  const card=node('article',undefined,'office-case');
+  card.append(node('div',new Date(m.created_at).toLocaleString('en-CA')+' · '+newsroomLabels[m.status],'kicker'),node('h3',m.subject),node('p','TOPIC: '+m.topic,'office-meta'),node('p','FROM: '+(m.sender_name||'Anonymous')+' · '+m.sender_email,'office-meta'),node('p',m.message));
+  const label=node('label','MESSAGE STATUS'),select=node('select');
+  for(const [v,t] of Object.entries(newsroomLabels)){const opt=node('option',t);opt.value=v;opt.selected=m.status===v;select.append(opt);}
+  const notesLabel=node('label','PRIVATE EDITOR NOTES'),notes=node('textarea');notes.value=m.editor_notes||'';notes.rows=3;notes.maxLength=5000;
+  const save=node('button','SAVE MESSAGE'),feedback=node('p',undefined,'office-meta');save.type='button';
+  save.onclick=async()=>{save.disabled=true;const {error}=await supabase.from('tribune_newsroom_messages').update({status:select.value,editor_notes:notes.value.trim()||null,updated_at:new Date().toISOString(),resolved_at:select.value==='resolved'?new Date().toISOString():null}).eq('id',m.id);save.disabled=false;if(error){feedback.textContent='Save failed: '+error.message;}else{feedback.textContent='Saved.';await loadNewsroom();}};
+  card.append(label,select,notesLabel,notes,save,feedback);inboxList.append(card);
+ }
+}
+$('newsroom-refresh').addEventListener('click',loadNewsroom);
+$('newsroom-status').addEventListener('change',renderNewsroom);
+inbox.addEventListener('toggle',()=>{if(inbox.open&&!dashboard.hidden)loadNewsroom();});
+
 export { supabase };
