@@ -64,6 +64,7 @@ const section = Array.from(document.querySelectorAll('section, div')).find(el =>
       list.appendChild(item);
     }
     section.appendChild(list);
+    await loadSubscriberCounts();
   } catch (error) {
     section.textContent = `Circulation report unavailable: ${error.message}`;
   }
@@ -86,74 +87,72 @@ if (!document.querySelector('#office-dashboard')?.hidden) {
 }
 
 
-// Frank's Moderation Desk
-const moderationDesk = document.getElementById('moderation-queue');
-
-function showModerationMessage(message) {
-  if (!moderationDesk) return;
-  moderationDesk.textContent = message;
+// Frank's secure editorial desks. Every request uses the current editor session.
+const MOD=$('moderation-queue'), COR=$('correspondence-list');
+let correspondencePage=0,correspondenceTotal=0;
+const perPage=10;
+async function editorAction(action,extra={}){
+  const {data:{session},error:sessionError}=await supabase.auth.getSession();
+  if(sessionError||!session)throw new Error('Editor sign-in required.');
+  const {data,error}=await supabase.functions.invoke('tribune-community',{body:{action,...extra},headers:{Authorization:`Bearer ${session.access_token}`}});
+  if(error){let detail='';try{detail=(await error.context?.json())?.error||''}catch{}throw new Error(detail||error.message||'Editorial service unavailable');}
+  if(data?.error)throw new Error(data.error);
+  return data;
 }
-
-showModerationMessage('Frank is preparing the moderation records...');
-
-async function loadModerationQueue() {
-  showModerationMessage('Checking for comments awaiting review...');
-
-  try {
-    const { data, error } = await supabase.functions.invoke(
-      'tribune-community',
-      { body: { action: 'editor_queue' } }
-    );
-
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
-
-    const pending = data?.pending ?? [];
-    const reports = data?.reports ?? [];
-
-   showModerationMessage(
-  `${pending.length} pending comments | ${reports.length} open reports`
-);
-
-if (pending.length > 0) {
-  const heading = document.createElement('h3');
-  heading.textContent = 'COMMENTS AWAITING FRANK’S VERDICT';
-  moderationDesk.appendChild(heading);
-
-  pending.forEach(comment => {
-    const entry = document.createElement('div');
-    entry.className = 'moderation-entry';
-
-    const author = document.createElement('strong');
-    author.textContent = comment.author_username || 'Unknown reader';
-
-    const body = document.createElement('p');
-    body.textContent = comment.body;
-
-    entry.append(author, body);
-    moderationDesk.appendChild(entry);
-  });
-}
-  } catch (error) {
-    showModerationMessage('Unable to load moderation queue: ' + error.message);
+function editorialDate(v){return new Date(v).toLocaleString('en-CA',{dateStyle:'medium',timeStyle:'short'});}
+function articleLink(slug){const a=node('a','VIEW ARTICLE ↗');a.href='article.html?id='+encodeURIComponent(slug);a.target='_blank';a.rel='noopener noreferrer';return a;}
+function button(label,fn,cls){const b=node('button',label,cls);b.type='button';b.addEventListener('click',async()=>{b.disabled=true;try{await fn();}catch(e){alert(e.message)}finally{b.disabled=false}});return b;}
+function commentCard(c,{moderate=false,report=null}={}){
+  const card=node('article',undefined,'office-comment-card');
+  card.append(node('h3',(c.is_editor_reply?'🔨 ':'')+(c.author_username||'Unknown reader')));
+  card.append(node('div',editorialDate(c.created_at)+' · '+c.article_slug+(c.parent_id?' · REPLY':''),'office-comment-meta'));
+  card.append(node('p',c.body));
+  if(c.moderation_flags?.length)card.append(node('p','AUTOMATIC FLAGS: '+c.moderation_flags.join(', '),'office-note'));
+  if(report)card.append(node('p','REPORTED: '+report.reason+(report.details?' — '+report.details:''),'office-note'));
+  const actions=node('div',undefined,'office-comment-actions');actions.append(articleLink(c.article_slug));
+  if(moderate){
+    actions.append(button('APPROVE',async()=>{if(!confirm('Approve this comment for public display?'))return;await editorAction('editor_moderate',{commentId:c.id,decision:'approve'});await reloadDesks();}));
+    actions.append(button('REJECT',async()=>{if(!confirm('Reject this comment?'))return;await editorAction('editor_moderate',{commentId:c.id,decision:'reject'});await reloadDesks();},'office-danger'));
+  }else{
+    if(!c.is_editor_reply){
+      actions.append(button('REPLY AS FRANK',async()=>{
+        let form=card.querySelector('.office-reply');if(form){form.remove();return;}
+        form=node('form',undefined,'office-reply');const label=node('label','FRANK’S OFFICIAL REPLY');const area=node('textarea');area.maxLength=1200;area.required=true;area.placeholder='The Hammer has entered the conversation…';const send=node('button','PUBLISH FRANK’S REPLY');send.type='submit';const cancel=node('button','CANCEL');cancel.type='button';cancel.addEventListener('click',()=>form.remove());
+        form.addEventListener('submit',async e=>{e.preventDefault();if(!area.value.trim())return;send.disabled=true;try{await editorAction('editor_reply',{articleSlug:c.article_slug,parentId:c.id,body:area.value.trim()});await reloadDesks();}catch(err){alert(err.message);send.disabled=false;}});
+        form.append(label,area,send,cancel);card.append(form);area.focus();
+      }));
+    }
+    actions.append(button('REMOVE COMMENT',async()=>{if(!confirm('Remove this comment from the public Tribune? This action is recorded.'))return;await editorAction('editor_moderate',{commentId:c.id,decision:'remove'});await reloadDesks();},'office-danger'));
   }
+  if(report){actions.append(button('DISMISS REPORT',async()=>{if(!confirm('Dismiss this report and leave the comment published?'))return;await editorAction('editor_report_review',{reportId:report.id,decision:'dismissed'});await loadModerationQueue();}));actions.append(button('REMOVE + CLOSE REPORT',async()=>{if(!confirm('Remove this comment and mark the report reviewed?'))return;await editorAction('editor_moderate',{commentId:c.id,decision:'remove'});await editorAction('editor_report_review',{reportId:report.id,decision:'reviewed'});await reloadDesks();},'office-danger'));}
+  card.append(actions);return card;
 }
-const moderationObserver = new MutationObserver(() => {
-  const dashboard = document.getElementById('office-dashboard');
-
-  if (dashboard && !dashboard.hidden) {
-    moderationObserver.disconnect();
-    loadModerationQueue();
-  }
-});
-
-moderationObserver.observe(document.body, {
-  attributes: true,
-  attributeFilter: ['hidden'],
-  subtree: true
-});
-
-if (!document.getElementById('office-dashboard')?.hidden) {
-  moderationObserver.disconnect();
-  loadModerationQueue();
-}
+async function loadModerationQueue(){if(!MOD)return;MOD.textContent='Checking the moderation docket…';try{
+  const data=await editorAction('editor_queue');MOD.replaceChildren();
+  const pending=data.pending||[],reports=data.reports||[];
+  MOD.append(node('p',`${pending.length} pending comments | ${reports.length} open reports`,'office-meta'));
+  if(pending.length){MOD.append(node('h3','COMMENTS AWAITING FRANK’S VERDICT'));pending.forEach(c=>MOD.append(commentCard(c,{moderate:true})));}
+  if(reports.length){MOD.append(node('h3','READER REPORTS'));const comments=data.reportedComments||[];for(const r of reports){const c=comments.find(x=>x.id===r.comment_id);if(c)MOD.append(commentCard(c,{report:r}));else{const el=node('div',undefined,'office-comment-card');el.append(node('p',`Report: ${r.reason} · ${r.details||'No details'}`),node('p','Original comment unavailable.','office-meta'),button('DISMISS REPORT',async()=>{await editorAction('editor_report_review',{reportId:r.id,decision:'dismissed'});await loadModerationQueue();}));MOD.append(el);}}}
+  if(!pending.length&&!reports.length)MOD.append(node('p','The moderation docket is clear. Frank can put his feet up.'));
+}catch(e){MOD.textContent='Moderation unavailable: '+e.message;}}
+async function loadCorrespondence(){if(!COR)return;COR.textContent='Retrieving the public correspondence…';try{
+ const filter=$('correspondence-filter').value,articleSlug=$('correspondence-article').value.trim();
+ const data=await editorAction('editor_comments',{page:correspondencePage,pageSize:perPage,filter,articleSlug});
+ correspondenceTotal=data.total||0;COR.replaceChildren();
+ $('correspondence-summary').textContent=`${correspondenceTotal} matching published comments · newest first`;
+ if(!data.comments?.length)COR.append(node('p','No comments match this filter.','office-empty'));
+ else data.comments.forEach(c=>{const card=commentCard(c);if(c.answered)card.append(node('p','✓ Frank has replied','office-comment-meta'));else if(!c.is_editor_reply)card.append(node('p','Awaiting Frank’s reply','office-comment-meta'));COR.append(card)});
+ const maxPage=Math.max(1,Math.ceil(correspondenceTotal/perPage));$('correspondence-page').textContent=`Page ${correspondencePage+1} of ${maxPage}`;
+ $('correspondence-prev').disabled=correspondencePage===0;$('correspondence-next').disabled=correspondencePage+1>=maxPage;
+ }catch(e){COR.textContent='Correspondence unavailable: '+e.message;}}
+async function reloadDesks(){await Promise.all([loadModerationQueue(),loadCorrespondence()]);}
+$('correspondence-prev').addEventListener('click',()=>{if(correspondencePage>0){correspondencePage--;loadCorrespondence();}});
+$('correspondence-next').addEventListener('click',()=>{if((correspondencePage+1)*perPage<correspondenceTotal){correspondencePage++;loadCorrespondence();}});
+$('correspondence-filter').addEventListener('change',()=>{correspondencePage=0;loadCorrespondence();});
+$('correspondence-refresh').addEventListener('click',()=>{correspondencePage=0;loadCorrespondence();});
+$('correspondence-article').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();correspondencePage=0;loadCorrespondence();}});
+const deskObserver=new MutationObserver(()=>{if(!dashboard.hidden){deskObserver.disconnect();reloadDesks();}});
+deskObserver.observe(dashboard,{attributes:true,attributeFilter:['hidden']});
+if(!dashboard.hidden){deskObserver.disconnect();reloadDesks();}
+// Subscriber counts use editor-only RLS, never expose email addresses in the Office summary.
+async function loadSubscriberCounts(){const el=$('circulation-stats');if(!el)return;try{const data=await editorAction('editor_subscribers');const p=node('p',`SUBSCRIBERS — Total: ${data.total} | Confirmed: ${data.confirmed} | Pending: ${data.pending} | Unsubscribed: ${data.unsubscribed}`,'office-meta');p.id='office-subscriber-summary';el.append(p);}catch(e){el.append(node('p','Subscriber totals unavailable: '+e.message,'office-meta'));}}

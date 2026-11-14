@@ -82,3 +82,28 @@
 .community-empty,.community-loading{padding:20px;text-align:center;font-style:italic;color:#6b5639;background:#f0dfbc}
 .community-loading{margin:0}
 @media(max-width:600px){.community-reactions{gap:8px}.reaction-button{font-size:11px;gap:6px;padding:10px 5px}.community-auth,.community-comment-form{padding:14px}.community-signed-in{align-items:flex-start}.community-signed-in p{width:100%}.community-comment.is-reply{margin-left:12px;padding-left:10px}.community-comments-heading{align-items:flex-start;flex-direction:column;gap:3px}.community-comment-head time{width:100%;margin-left:0}}
+
+/* Frank's Office: collapsible desks and compact editorial correspondence */
+.office-department{max-width:900px;margin:20px auto;padding:0 20px 18px}
+.office-department>summary{cursor:pointer;list-style:none;padding:19px 4px;font:900 clamp(18px,3vw,27px) 'Playfair Display',Georgia,serif;border-bottom:1px solid #8b7858}
+.office-department>summary::-webkit-details-marker{display:none}
+.office-department>summary::after{content:'＋';float:right;font:700 20px 'DM Sans',sans-serif}
+.office-department[open]>summary::after{content:'−'}
+.office-department>p{font-size:13px}
+.office-toolbar{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin:16px 0}
+.office-toolbar label{flex:1 1 200px;margin:0}
+.office-toolbar select,.office-toolbar input,.office-reply textarea{width:100%;padding:10px;background:#fff9e9;border:1px solid #8b7858;color:#252015;font:14px Georgia,serif}
+.office-toolbar button{margin:0}
+.office-comment-card{border-top:1px solid #988262;padding:14px 0;overflow-wrap:anywhere}
+.office-comment-card h3{font:900 17px 'Playfair Display',Georgia,serif;margin:0 0 6px}
+.office-comment-card p{white-space:pre-wrap;font-size:14px;margin:8px 0}
+.office-comment-meta{font:11px 'DM Sans',sans-serif;color:#65543a}
+.office-comment-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.office-comment-actions button,.office-comment-actions a{margin:6px 0 0;padding:8px 10px;font:800 10px 'DM Sans',sans-serif;background:#30281e;color:#f6e6c5;text-decoration:none;border:0}
+.office-comment-actions .office-danger{background:#8b3426}
+.office-reply{margin:12px 0;padding:12px;border:1px solid #9a825b;background:#ead8b1}
+.office-reply textarea{min-height:85px;resize:vertical}
+.office-pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:14px 0}
+.office-pagination button:disabled{opacity:.4;cursor:not-allowed}
+.office-note{padding:10px;border-left:3px solid #8b3426;background:#ead8b1}
+@media(max-width:600px){.office-department{padding:0 12px 14px}.office-department>summary{font-size:19px}.office-pagination{flex-wrap:wrap}.office-toolbar{display:block}.office-toolbar label{margin:12px 0}}
