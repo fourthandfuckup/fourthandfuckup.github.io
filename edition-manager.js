@@ -27,7 +27,19 @@ async function loadComics(){
   label.append(cb,name);
   const view=document.createElement('button');view.textContent='VIEW';view.type='button';
   view.onclick=async()=>{const {data,error}=await db.storage.from(comicBucket).createSignedUrl(c.image_path,60);if(error)$('comic-status').textContent=error.message;else window.open(data.signedUrl,'_blank','noopener');};
-  row.append(label,view);root.append(row);
+  const remove=document.createElement('button');remove.textContent='DELETE';remove.type='button';
+  remove.setAttribute('aria-label','Delete comic draft: '+c.title);
+  remove.onclick=async()=>{
+   if(!user)return;
+   if(!confirm('Permanently delete the comic draft "'+c.title+'"? It will also be removed from any saved, unpublished edition selections. Previously published comic images and archives are preserved.'))return;
+   remove.disabled=true;$('comic-status').textContent='Deleting comic draft…';
+   const {data:deleted,error:deleteError}=await db.from('tribune_comic_drafts').delete().eq('id',c.id).eq('editor_id',user.id).select('id');
+   if(deleteError||!deleted?.length){remove.disabled=false;$('comic-status').textContent='Could not delete comic: '+(deleteError?.message||'Draft not found or not authorised.');return;}
+   const {error:storageError}=await db.storage.from(comicBucket).remove([c.image_path]);
+   await loadComics();
+   $('comic-status').textContent=storageError?'Comic draft deleted, but its unused upload could not be removed: '+storageError.message:'Comic draft deleted. Published editions and their archived images are unchanged.';
+  };
+  row.append(label,view,remove);root.append(row);
  }
  if(current&&selectedBefore.size===0)await loadEditionComics(current);
 }
