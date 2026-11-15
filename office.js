@@ -190,3 +190,20 @@ $('newsroom-status').addEventListener('change',renderNewsroom);
 inbox.addEventListener('toggle',()=>{if(inbox.open&&!dashboard.hidden)loadNewsroom();});
 
 export { supabase };
+
+async function refreshPortraitSubscribers(){
+ const panel=$('office-subscriber-mini');if(!panel||dashboard.hidden){if(panel)panel.hidden=true;return;}
+ panel.hidden=false;
+ const {data,error}=await supabase.from('tribune_subscribers').select('status,confirmed_at,unsubscribed_at');
+ if(error){$('mini-total').textContent='—';$('mini-change').textContent='Unavailable';return;}
+ const cutoff=Date.now()-30*86400000;
+ const active=(data||[]).filter(s=>s.status==='confirmed');
+ const joined=(data||[]).filter(s=>s.confirmed_at&&Date.parse(s.confirmed_at)>=cutoff).length;
+ const left=(data||[]).filter(s=>s.unsubscribed_at&&Date.parse(s.unsubscribed_at)>=cutoff).length;
+ const net=joined-left;
+ $('mini-total').textContent=String(active.length);
+ $('mini-change').textContent=(net>0?'+':'')+net;
+}
+const subscriberObserver=new MutationObserver(()=>{if(!dashboard.hidden)refreshPortraitSubscribers();else $('office-subscriber-mini').hidden=true;});
+subscriberObserver.observe(dashboard,{attributes:true,attributeFilter:['hidden']});
+if(!dashboard.hidden)refreshPortraitSubscribers();
