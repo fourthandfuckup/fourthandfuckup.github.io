@@ -275,7 +275,7 @@ async function publishPreview(e){
  alert('STAGING SAFETY LOCK: Production publication is disabled until the upgrade is approved and deployed. No edition has been published.');
  return;
  if(!user)return;
- // This writes ONLY tribune_live_published_editions, never tribune_live_published_editions.
+ // Production-only publication path. Staging safety lock above prevents writes.
  if(!e.main_article_id)return msg('Choose and save a main headline before preview publication.');
 
  if(!confirm('STEP 1 OF 2 — Review publication: Volume '+roman(e.volume_number)+', Issue '+e.issue_number+' ('+e.edition_date+'). This will make the selected articles, comics and crossword publicly accessible on the PREVIEW SITE. Continue to final approval?'))return;
