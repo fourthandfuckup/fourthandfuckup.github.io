@@ -33,13 +33,20 @@ $('newspaper-frame').addEventListener('load',updateNewspaperPreview);
 $('import-74').addEventListener('click',async()=>{
 if(!user)return notice('Sign in before importing.');
 if((current||$('headline').value.trim()||$('story').value.trim())&&!confirm('Open the existing $74 investigation? Unsaved changes in the editor will be replaced.'))return;
-notice('Checking for an existing imported copy...');
-const {data:existing,error:findError}=await db.from('tribune_prod_article_drafts').select('*').eq('source_article_id','seventy-four-dollar-man').maybeSingle();
-if(findError){notice('Import lookup failed: '+findError.message);return;}
-if(existing){await load(existing);notice('Opened the existing imported $74 investigation. Edit and save this same draft.');return;}
+const button=$('import-74');button.disabled=true;notice('Checking for an existing imported copy...');
 try{
-const response=await fetch('imports/seventy-four-dollar-man.json?v=1',{cache:'no-store'});if(!response.ok)throw new Error('Could not load the original article ('+response.status+')');
-const a=await response.json();if(a.id!=='seventy-four-dollar-man'||!Array.isArray(a.body))throw new Error('Original article data is incomplete');
-current=null;sourceArticleId=a.id;clearPhoto();$('headline').value=a.title;$('author').value=a.author;$('summary').value=a.deck;$('story').value=a.body.join('\n\n');$('placement').value='main';for(const c of $('categories').querySelectorAll('input'))c.checked=c.value==='Sleeping Giant League';preview();notice('Original $74 investigation loaded. Click SAVE DRAFT to create its editable private copy. Nothing has been published.');
-}catch(e){notice('Import failed: '+e.message);}
+const {data:existing,error:findError}=await db.from('tribune_prod_article_drafts').select('*').eq('source_article_id','seventy-four-dollar-man').maybeSingle();
+if(findError)throw new Error('Import lookup failed: '+findError.message);
+if(existing){await load(existing);notice('Opened the existing imported $74 investigation. Edit and save this same draft.');return;}
+const response=await fetch('imports/seventy-four-dollar-man.json?v=2',{cache:'no-store'});
+if(!response.ok)throw new Error('Could not load the article ('+response.status+')');
+const article=await response.json();
+if(article.id!=='seventy-four-dollar-man'||!Array.isArray(article.body))throw new Error('Article data is incomplete');
+current=null;sourceArticleId=article.id;clearPhoto();
+$('headline').value=article.title;$('author').value=article.author;$('summary').value=article.deck;
+$('story').value=article.body.join('\n\n');$('placement').value='main';
+for(const c of $('categories').querySelectorAll('input'))c.checked=c.value==='Sleeping Giant League';
+preview();notice('Original short investigation loaded. Click SAVE DRAFT to save a private editable copy. Nothing has been published.');
+}catch(error){notice('Import failed: '+error.message);}
+finally{button.disabled=false;}
 });
