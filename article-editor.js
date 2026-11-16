@@ -19,6 +19,33 @@ $('photo').addEventListener('change',()=>{if(photoUrl)URL.revokeObjectURL(photoU
 $('remove-photo').addEventListener('click',()=>{if(photoUrl)URL.revokeObjectURL(photoUrl);photoUrl=null;pendingImage=null;removeImageOnSave=true;$('photo').value='';$('preview-photo').hidden=true;updateNewspaperPreview();notice('Image marked for removal. Save Draft to confirm; no cloud file has been deleted yet.');});
 $('save').addEventListener('click',async()=>{if(!user)return notice('Please sign in first.');const d={...values(),editor_id:user.id,image_path:removeImageOnSave?null:savedImagePath,source_article_id:sourceArticleId,updated_at:new Date().toISOString()};if(current)d.id=current;notice('Saving cloud draft...');if(pendingImage){if(!['image/jpeg','image/png','image/webp'].includes(pendingImage.type)||pendingImage.size>5242880){notice('Choose a JPG, PNG, or WebP image under 5 MB.');return;}const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[pendingImage.type];const path=user.id+'/'+crypto.randomUUID()+'.'+ext;const {error:uploadError}=await db.storage.from(bucket).upload(path,pendingImage,{contentType:pendingImage.type,upsert:false});if(uploadError){notice('Image upload failed: '+uploadError.message);return;}d.image_path=path;}const {data,error}=await db.from('tribune_article_drafts').upsert(d).select('id').single();if(error){if(pendingImage&&d.image_path!==savedImagePath)await db.storage.from(bucket).remove([d.image_path]);notice('Cloud save failed: '+error.message);return;}const previous=savedImagePath;savedImagePath=d.image_path;pendingImage=null;removeImageOnSave=false;if(previous&&previous!==savedImagePath)await db.storage.from(bucket).remove([previous]);current=data.id;await refresh();notice('Draft and image saved securely to the newsroom cloud. Nothing published.');});
 $('new').addEventListener('click',()=>{current=null;sourceArticleId=null;for(const f of ['headline','summary','story'])$(f).value='';$('author').value='Frank “The Hammer” Haggerty';$('placement').value='main';for(const c of $('categories').querySelectorAll('input'))c.checked=false;clearPhoto();preview();notice('New blank article.');});
+$('single-stage').addEventListener('click',async()=>{
+ if(!user)return notice('Sign in before staging an article.');
+ if(!current)return notice('Save this article as a cloud draft before staging.');
+ if(pendingImage||removeImageOnSave)return notice('Save the image change to the cloud draft before staging.');
+ const d=values(),validation=window.TribuneStandalone.validate(d);
+ if(!validation.ok)return notice('Before staging: '+validation.errors.join(' '));
+ const saved=drafts.find(x=>x.id===current);
+ if(!saved)return notice('Save and reload this cloud draft before staging.');
+ // Prevent accidentally staging unsaved text changes or stale image state.
+ if(['headline','author','summary','story'].some(k=>d[k]!==saved[k])||
+    JSON.stringify(d.categories)!==JSON.stringify(saved.categories)||
+    savedImagePath!==(saved.image_path||null))
+  return notice('You have unsaved changes. Save Draft before staging.');
+ const proceed=confirm('STAGE THIS ARTICLE PRIVATELY?\\n\\nThis creates or updates an editor-only standalone record. It does NOT publish to readers or alter the current newspaper edition.');
+ if(!proceed)return notice('Private staging cancelled.');
+ $('single-stage').disabled=true;
+ try{
+  const {data:session}=await db.auth.getUser();
+  if(session?.user?.id!==user.id)throw new Error('Editor session expired. Sign in again.');
+  const staged=await window.TribuneStandaloneStore.stage(db,d,user.id,current);
+  notice('Private article staged: '+staged.slug+'. It is NOT published. The newspaper edition remains unchanged.');
+ }catch(error){
+  if(/tribune_standalone_articles|schema cache|relation.*does not exist/i.test(error.message||''))
+   notice('Private staging database is not installed yet. Nothing was published or changed.'); 
+  else notice('Private staging failed: '+(error.message||'Unknown error')+'. Nothing published.');
+ }finally{$('single-stage').disabled=false;}
+});
 $('standalone-proof').addEventListener('click',async()=>{
  if(!user)return notice('Sign in before previewing a standalone story.');
  const d=values();
