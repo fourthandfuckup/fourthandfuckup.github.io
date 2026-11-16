@@ -32,6 +32,13 @@ $('standalone-proof').addEventListener('click',async()=>{
  const imageFile=pendingImage;
  if(imageFile&&imageFile.size<=900000&&['image/jpeg','image/png','image/webp'].includes(imageFile.type)){
   imageDataUrl=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(imageFile);});
+ }else if(photoUrl&&!removeImageOnSave){
+  // Previously saved private images are available locally as object URLs.
+  const response=await fetch(photoUrl);
+  const blob=await response.blob();
+  if(blob.size<=900000&&['image/jpeg','image/png','image/webp'].includes(blob.type)){
+   imageDataUrl=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(blob);});
+  }
  }
  try{
 
