@@ -10,6 +10,7 @@ create table if not exists public.tribune_standalone_articles (
   story text not null,
   categories text[] not null default '{}',
   image_url text,
+  is_public boolean not null default false,
   published_by uuid not null references auth.users(id),
   published_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -19,7 +20,7 @@ grant select on public.tribune_standalone_articles to anon, authenticated;
 grant insert, update on public.tribune_standalone_articles to authenticated;
 create policy "Public can read standalone published stories"
   on public.tribune_standalone_articles for select
-  to anon, authenticated using (true);
+  to anon, authenticated using (is_public = true);
 create policy "Only editors can publish standalone stories"
   on public.tribune_standalone_articles for insert to authenticated
   with check (published_by = (select auth.uid()) and exists (
@@ -33,5 +34,5 @@ create policy "Only original editor can update standalone stories"
   with check (published_by = (select auth.uid()) and exists (
     select 1 from public.tribune_editors e where e.user_id = (select auth.uid())
   ));
--- Before activation: add immutable slug rules, safe image publishing,
+-- Before activation: add immutable slug rules, explicit public release, safe image publishing,
 -- dedicated metadata URLs and integration tests.
