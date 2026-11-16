@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Standalone Store Tests</title></head><body><h1>Standalone Store Mock Tests</h1><pre id="results"></pre><script src="../standalone-publishing-contract.js"></script><script src="../standalone-publishing-store.js"></script><script>
+(async()=>{
+const valid={headline:'The Great Waiver Wire Disaster',author:'Frank',summary:'Another manager embarrassed',story:'The full story of the waiver wire disaster and the manager who blew all of his FAAB in a single night.',categories:["Frank's Desk"]};
+const uuid='11111111-1111-4111-8111-111111111111',editor='22222222-2222-4222-8222-222222222222';
+const calls=[];
+const mock={from(table){calls.push(['table',table]);return {
+ select(){return this},eq(k,v){calls.push(['eq',k,v]);return this},
+ maybeSingle:async()=>({data:null,error:null}),
+ insert(record){calls.push(['insert',record]);return {select(){return {single:async()=>({data:{id:uuid,slug:record.slug,is_public:false},error:null})}}}}
+}}};
+const result=await window.TribuneStandaloneStore.stage(mock,valid,editor,uuid);
+const checks=[
+ ['standalone table only',calls.some(x=>x[0]==='table'&&x[1]==='tribune_standalone_articles')],
+ ['staged record is private',calls.some(x=>x[0]==='insert'&&x[1].is_public===false)],
+ ['draft linked',calls.some(x=>x[0]==='insert'&&x[1].draft_id===uuid)],
+ ['returned record private',result.is_public===false],
+ ['no edition writes',!calls.some(x=>x[0]==='table'&&x[1].includes('edition'))]
+];
+document.getElementById('results').textContent=checks.map(([name,ok])=>(ok?'PASS':'FAIL')+' — '+name).join('\n')+'\n\n'+checks.filter(x=>x[1]).length+'/'+checks.length+' checks passed.';
+})();
+</script></body></html>
