@@ -15,59 +15,42 @@ $('office-filter').addEventListener('change',render);
 supabase.auth.onAuthStateChange(()=>{setTimeout(check,0);});check();
 
 async function loadCirculation() {
-  
-const section = Array.from(document.querySelectorAll('section, div')).find(el => el.textContent?.trim() === 'Circulation reports are being connected. Check back soon.');
-
-
+  const section = $('circulation-stats');
   if (!section) return;
-
   section.textContent = 'Loading circulation reports...';
-
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      section.textContent = 'Sign in to view circulation reports.';
-      return;
-    }
-
-    const response = await fetch(
-      'https://nlckcelwfcoszbvqyeyr.supabase.co/functions/v1/tribune-circulation',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': 'sb_publishable_CrRNQGAZoc6TtT3wFe3sUg_hoYuupy8',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-      }
-    );
-
-    const report = await response.json();
-    if (!response.ok) throw new Error(report.error || 'Report unavailable');
-
+    const {data:{session}} = await supabase.auth.getSession();
+    if (!session) {section.textContent='Sign in to view circulation reports.';return;}
+    const response = await fetch('https://nlckcelwfcoszbvqyeyr.supabase.co/functions/v1/tribune-circulation',{
+      method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,apikey:'sb_publishable_CrRNQGAZoc6TtT3wFe3sUg_hoYuupy8','Content-Type':'application/json'},body:JSON.stringify({})
+    });
+    const report=await response.json();
+    if(!response.ok)throw new Error(report.error||'Report unavailable');
     section.replaceChildren();
-
-    const summary = document.createElement('p');
-    summary.textContent =
-      `Last 30 days — Visitors: ${report.activeUsers} | Page views: ${report.pageViews} | Sessions: ${report.sessions}`;
-    section.appendChild(summary);
-
-    const heading = document.createElement('h3');
-    heading.textContent = 'Most Read Pages';
-    section.appendChild(heading);
-
-    const list = document.createElement('ol');
-    for (const page of report.popularPages || []) {
-      const item = document.createElement('li');
-      item.textContent = `${page.title}: ${page.views} views`;
-      list.appendChild(item);
+    const grid=node('div',undefined,'circulation-metrics');
+    for(const [label,value] of [['Visitors',report.activeUsers],['Page views',report.pageViews],['Sessions',report.sessions]]){
+      const card=node('div',undefined,'circulation-metric');
+      card.append(node('strong',Number(value||0).toLocaleString('en-CA')),node('span',label));
+      grid.append(card);
     }
-    section.appendChild(list);
+    section.append(grid);
+    const panel=node('div',undefined,'circulation-panel');
+    panel.append(node('h3','Most Read Pages'));
+    const pages=Array.isArray(report.popularPages)?report.popularPages:[];
+    const max=Math.max(1,...pages.map(p=>Number(p.views)||0));
+    if(!pages.length)panel.append(node('p','No page view data yet.','office-meta'));
+    for(const page of pages){
+      const row=node('div',undefined,'circulation-page');
+      const labels=node('div',undefined,'circulation-page-labels');
+      labels.append(node('span',page.title||'Untitled page'),node('strong',Number(page.views||0).toLocaleString('en-CA')));
+      const track=node('div',undefined,'circulation-track');
+      const bar=node('div',undefined,'circulation-bar');
+      bar.style.width=(Math.max(0,Number(page.views)||0)/max*100)+'%';
+      track.append(bar);row.append(labels,track);panel.append(row);
+    }
+    section.append(panel);
     await loadSubscriberCounts();
-  } catch (error) {
-    section.textContent = `Circulation report unavailable: ${error.message}`;
-  }
+  }catch(error){section.textContent='Circulation report unavailable: '+error.message;}
 }
 
 const circulationObserver = new MutationObserver(() => {
@@ -155,7 +138,21 @@ const deskObserver=new MutationObserver(()=>{if(!dashboard.hidden){deskObserver.
 deskObserver.observe(dashboard,{attributes:true,attributeFilter:['hidden']});
 if(!dashboard.hidden){deskObserver.disconnect();reloadDesks();}
 // Subscriber counts use editor-only RLS, never expose email addresses in the Office summary.
-async function loadSubscriberCounts(){const el=$('circulation-stats');if(!el)return;try{const data=await editorAction('editor_subscribers');const p=node('p',`SUBSCRIBERS — Total: ${data.total} | Confirmed: ${data.confirmed} | Pending: ${data.pending} | Unsubscribed: ${data.unsubscribed}`,'office-meta');p.id='office-subscriber-summary';el.append(p);}catch(e){el.append(node('p','Subscriber totals unavailable: '+e.message,'office-meta'));}}
+async function loadSubscriberCounts(){
+ const el=$('circulation-stats');if(!el)return;
+ const panel=node('div',undefined,'circulation-panel');
+ panel.append(node('h3','Newsletter Subscribers'));
+ const grid=node('div',undefined,'circulation-subscribers');
+ try{
+  const data=await editorAction('editor_subscribers');
+  for(const [label,value] of [['Total',data.total],['Confirmed',data.confirmed],['Pending',data.pending],['Unsubscribed',data.unsubscribed]]){
+   const card=node('div',undefined,'circulation-subscriber');
+   card.append(node('strong',Number(value||0).toLocaleString('en-CA')),node('span',label));grid.append(card);
+  }
+  panel.append(grid);
+ }catch(e){panel.append(node('p','Subscriber totals unavailable: '+e.message,'office-meta'));}
+ el.append(panel);
+}
 
 
 const inbox=$('newsroom-inbox'),inboxList=$('newsroom-messages'),inboxFeedback=$('newsroom-feedback');
