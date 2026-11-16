@@ -2,9 +2,9 @@
 // Preview-only edition layout planning. Never writes to Supabase or alters an edition.
 (()=>{
 const $=id=>document.getElementById(id);
-const key='tribune-preview-department-headlines';
-const idsKey='tribune-preview-department-draft-ids';
-const supportKey='tribune-preview-department-supporting';
+const key='tribune-production-department-headlines';
+const idsKey='tribune-production-department-draft-ids';
+const supportKey='tribune-production-department-supporting';
 const support=$('department-support-draft'),supportList=$('department-support-list');
 const dept=$('department-plan'),draft=$('department-lead-draft'),status=$('department-plan-status');
 function read(key){try{return JSON.parse(localStorage.getItem(key)||'{}')}catch{return {}}}
@@ -51,7 +51,7 @@ persistCurrentLayout();choose();overview();status.textContent='Browser-only depa
 });
 $('department-private-proof').addEventListener('click',()=>{const id=read(idsKey)[dept.value],supporting=read(supportKey)[dept.value]||[];const ids=[id,...supporting.map(a=>a.id)].filter(Boolean);if(!ids.length){status.textContent='Select a featured or supporting article first.';return;}document.dispatchEvent(new CustomEvent('tribune:private-department-proof',{detail:{department:dept.value,ids}}));});
 // Per-edition snapshots are private to this browser, never stored in Supabase.
-const editionPrefix='tribune-preview-edition-layout:';
+const editionPrefix='tribune-production-edition-layout:';
 const layoutKeys=[key,idsKey,supportKey];
 let activeEdition=null;
 function snapshot(){const obj={};for(const k of layoutKeys)obj[k]=read(k);return obj;}
