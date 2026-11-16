@@ -30,8 +30,11 @@ $('standalone-proof').addEventListener('click',async()=>{
   imageDataUrl=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(imageFile);});
  }
  try{
-  sessionStorage.setItem('tribune_standalone_proof',JSON.stringify({...d,imageDataUrl}));
-  window.open('standalone-article-proof.html','_blank','noopener');
+  const proofTab=window.open('about:blank','_blank');
+  if(!proofTab)throw new Error('Pop-up blocked. Allow pop-ups for the newsroom preview.');
+  proofTab.sessionStorage.setItem('tribune_standalone_proof',JSON.stringify({...d,imageDataUrl}));
+  proofTab.opener=null;
+  proofTab.location.replace('standalone-article-proof.html');
   notice('Opened a private standalone article proof. Nothing was published.');
  }catch(error){notice('Could not open article proof: '+error.message);}
 });
