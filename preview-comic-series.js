@@ -2,7 +2,7 @@
 (()=>{
 const select=document.getElementById('comic-series'),upload=document.getElementById('upload-comic'),status=document.getElementById('comic-status');
 if(!select)return;
-const key='tribune-preview-comic-series';
+const key='tribune-production-comic-series';
 function read(){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return []}}
 function populate(){const current=select.value;for(const s of read()){if(![...select.options].some(o=>o.value===s.id)){const option=new Option(s.title+' (preview only)',s.id);select.add(option,select.options[select.options.length-1]);}}if(current&&[...select.options].some(o=>o.value===current))select.value=current;}
 function guard(){const preview=read().some(s=>s.id===select.value);upload.disabled=preview;if(preview)status.textContent='This is a preview-only new series. Upload is disabled to avoid writing it into the production database. You can see the series in the preview archives.';}
