@@ -276,12 +276,12 @@ async function publishPreview(e){
  return;
  if(!user)return;
  // Production-only publication path. Staging safety lock above prevents writes.
- if(!e.main_article_id)return msg('Choose and save a main headline before preview publication.');
+ if(!e.main_article_id)return msg('Choose and save a main headline before production publication.');
 
- if(!confirm('STEP 1 OF 2 — Review publication: Volume '+roman(e.volume_number)+', Issue '+e.issue_number+' ('+e.edition_date+'). This will make the selected articles, comics and crossword publicly accessible on the PREVIEW SITE. Continue to final approval?'))return;
- if(!confirm('STEP 2 OF 2 — FINAL APPROVAL: Publish this edition to the PUBLIC PREVIEW ARCHIVE now? This is a real public preview publication, not a private draft. The live fourthandfuckup.com newspaper will not change.'))return;
+ if(!confirm('STEP 1 OF 2 — Review publication: Volume '+roman(e.volume_number)+', Issue '+e.issue_number+' ('+e.edition_date+'). This will publish the selected articles, comics and crossword to the LIVE fourthandfuckup.com newspaper. Confirm that this is NOT a preview test edition. Continue to final approval?'))return;
+ if(!confirm('STEP 2 OF 2 — FINAL APPROVAL: Publish this edition to the LIVE fourthandfuckup.com newspaper now? This is a real public production publication and cannot be treated as a preview test.'))return;
  const ids=[e.main_article_id,e.bulletin_left_id,e.bulletin_right_id].filter(Boolean);
- if(!ids.length)return msg('Select at least one article before publishing to the preview archive.');
+ if(!ids.length)return msg('Select at least one article before publishing to the live newspaper.');
  const {data,error}=await db.from('tribune_article_drafts').select('id,headline,author,summary,story,categories,image_path').in('id',ids);
  if(error)return msg('Publishing failed: '+error.message);
  for(const a of data||[]){if(!a.image_path)continue;const {data:file,error:downloadError}=await db.storage.from('tribune-draft-images').download(a.image_path);if(downloadError||!file)return msg('Publishing stopped: could not copy image for '+a.headline+'. '+(downloadError?.message||''));const extension=(a.image_path.split('.').pop()||'webp').toLowerCase();const safeExt=['jpg','jpeg','png','webp','gif'].includes(extension)?extension:'webp';const path=e.id+'/'+a.id+'.'+safeExt;const {error:uploadError}=await db.storage.from('tribune-published-images').upload(path,file,{upsert:true,contentType:file.type||'image/'+(safeExt==='jpg'?'jpeg':safeExt)});if(uploadError)return msg('Publishing stopped: could not publish image for '+a.headline+'. '+uploadError.message);a.preview_image_url=db.storage.from('tribune-published-images').getPublicUrl(path).data.publicUrl+'?v='+Date.now();delete a.image_path;}
