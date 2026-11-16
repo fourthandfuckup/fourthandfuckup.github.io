@@ -14,23 +14,35 @@ $('office-logout').addEventListener('click',async()=>{await supabase.auth.signOu
 $('office-filter').addEventListener('change',render);
 supabase.auth.onAuthStateChange(()=>{setTimeout(check,0);});check();
 
-async function loadCirculation() {
+async function loadCirculation(period='30d') {
   const section = $('circulation-stats');
   if (!section) return;
+  const filter=$('circulation-period');
+  if(filter)filter.disabled=true;
   section.textContent = 'Loading circulation reports...';
   try {
     const {data:{session}} = await supabase.auth.getSession();
     if (!session) {section.textContent='Sign in to view circulation reports.';return;}
     const response = await fetch('https://nlckcelwfcoszbvqyeyr.supabase.co/functions/v1/tribune-circulation',{
-      method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,apikey:'sb_publishable_CrRNQGAZoc6TtT3wFe3sUg_hoYuupy8','Content-Type':'application/json'},body:JSON.stringify({})
+      method:'POST',headers:{Authorization:`Bearer ${session.access_token}`,apikey:'sb_publishable_CrRNQGAZoc6TtT3wFe3sUg_hoYuupy8','Content-Type':'application/json'},body:JSON.stringify({period})
     });
     const report=await response.json();
     if(!response.ok)throw new Error(report.error||'Report unavailable');
+    if(period!=='30d' && (report.period === 'Last 30 days' || !report.period || (period==='compare30'&&!report.previous))) {
+      throw new Error('This date range needs the reporting-service update. The live service has not been changed.');
+    }
     section.replaceChildren();
+    section.append(node('p',report.period||'Last 30 days','office-meta'));
     const grid=node('div',undefined,'circulation-metrics');
     for(const [label,value] of [['Visitors',report.activeUsers],['Page views',report.pageViews],['Sessions',report.sessions]]){
       const card=node('div',undefined,'circulation-metric');
       card.append(node('strong',Number(value||0).toLocaleString('en-CA')),node('span',label));
+      if(period==='compare30' && report.previous){
+        const key=label==='Visitors'?'activeUsers':label==='Page views'?'pageViews':'sessions';
+        const prior=Number(report.previous[key]||0),now=Number(value||0);
+        const change=prior===0?(now===0?'0%':'New'):(now>=prior?'+':'')+((now-prior)/prior*100).toFixed(1)+'%';
+        card.append(node('small',change+' vs previous 30 days','circulation-change'));
+      }
       grid.append(card);
     }
     section.append(grid);
@@ -51,7 +63,9 @@ async function loadCirculation() {
     section.append(panel);
     await loadSubscriberCounts();
   }catch(error){section.textContent='Circulation report unavailable: '+error.message;}
+  finally{if(filter)filter.disabled=false;}
 }
+$('circulation-period')?.addEventListener('change',e=>loadCirculation(e.target.value));
 
 const circulationObserver = new MutationObserver(() => {
   if (!document.querySelector('#office-dashboard')?.hidden) {
