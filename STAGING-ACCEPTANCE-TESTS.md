@@ -47,3 +47,11 @@ Live main and live database must remain unchanged.
 - Added `PRODUCTION-DRAFT-ISOLATION.sql` with empty production-only draft tables, RLS policies, editor-only grants and assignment foreign keys. **Migration not executed**; live database remains untouched.
 - Database read-only verification: live published edition count 0, preview published count 2, shared draft edition count 1, production-only draft table does not yet exist. These are point-in-time counts.
 - Publication lock still active. Before deployment: review migration with schema tooling, execute after explicit approval, verify policies/API grants, test authorized editor workflow and safe publication using isolated test setup. Do not copy preview drafts or published test content.
+
+## Approved production draft schema applied — 2026-11-16
+- User explicitly approved creation of five empty production-only draft tables.
+- Applied Supabase migration `create_isolated_tribune_production_drafts` successfully.
+- Verified all five tables exist, RLS enabled, policies present (4 each except 3 on assignments), anon SELECT denied, authenticated role SELECT grant present (actual editor identity still enforced by RLS).
+- Verified all five production tables have zero rows. Preview retains one shared draft edition and two preview-published editions; live published table remains at zero rows.
+- Production staging branch targets the new tables. No production website deployment, no publishing unlock, no preview data copying.
+- Next: authenticated end-to-end editor test in a safe isolated setup, audit cross-environment storage/assets, and explicit release approval before deployment.
