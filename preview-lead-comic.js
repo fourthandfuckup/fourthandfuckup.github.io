@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const select=$('edition-lead-comic'),status=$('edition-lead-comic-status'),root=$('edition-comic-order');
 if(!select||!root)return;
-const leadKey='tribune-preview-featured-comic',orderKey='tribune-preview-comic-order';
+const leadKey='tribune-production-featured-comic',orderKey='tribune-production-comic-order';
 let current=[],ordered=[],published=[];
 function readOrder(){try{const ids=JSON.parse(localStorage.getItem(orderKey)||'[]');return Array.isArray(ids)?ids:[]}catch{return []}}
 function render(){
