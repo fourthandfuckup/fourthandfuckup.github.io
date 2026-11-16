@@ -21,7 +21,8 @@ $('new').addEventListener('click',()=>{current=null;sourceArticleId=null;for(con
 $('standalone-proof').addEventListener('click',async()=>{
  if(!user)return notice('Sign in before previewing a standalone story.');
  const d=values();
- if(!d.headline.trim()||!d.story.trim())return notice('Add a headline and full story before previewing.');
+ const validation=window.TribuneStandalone.validate(d);
+ if(!validation.ok)return notice('Before publication: '+validation.errors.join(' '));
  const proofTab=window.open('about:blank','_blank');
  if(!proofTab)return notice('Pop-up blocked. Allow pop-ups for the newsroom preview.');
  // A small local image may be included in the private tab proof. Larger images
