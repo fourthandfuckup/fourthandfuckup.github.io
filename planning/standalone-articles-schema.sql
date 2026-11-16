@@ -24,20 +24,20 @@ create policy "Public can read standalone published stories"
 create policy "Editors can review private standalone staging"
   on public.tribune_standalone_articles for select to authenticated
   using (exists (select 1 from public.tribune_editors e where e.user_id = (select auth.uid())));
-create policy "Only editors can publish standalone stories"
+create policy "Editors may create private staging only"
   on public.tribune_standalone_articles for insert to authenticated
-  with check (published_by = (select auth.uid()) and exists (
+  with check (is_public = false and published_at is null and image_url is null and published_by = (select auth.uid()) and exists (
     select 1 from public.tribune_editors e where e.user_id = (select auth.uid())
   ));
 create policy "Only original editor can update standalone stories"
   on public.tribune_standalone_articles for update to authenticated
-  using (published_by = (select auth.uid()) and exists (
+  using (is_public = false and published_by = (select auth.uid()) and exists (
     select 1 from public.tribune_editors e where e.user_id = (select auth.uid())
   ))
-  with check (published_by = (select auth.uid()) and exists (
+  with check (is_public = false and published_at is null and image_url is null and published_by = (select auth.uid()) and exists (
     select 1 from public.tribune_editors e where e.user_id = (select auth.uid())
   ));
--- Before activation: add immutable slug rules, explicit public release, safe image publishing,
+-- Before activation: enforce immutable slugs server-side, explicit public release, safe image publishing,
 -- dedicated metadata URLs and integration tests.
 
 -- Staging is editor-only. A later controlled release must set is_public=true
