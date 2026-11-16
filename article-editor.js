@@ -18,6 +18,23 @@ document.querySelectorAll('#editor-workspace input,#editor-workspace textarea,#e
 $('photo').addEventListener('change',()=>{if(photoUrl)URL.revokeObjectURL(photoUrl);const f=$('photo').files[0];pendingImage=f||null;photoUrl=f?URL.createObjectURL(f):null;$('preview-photo').hidden=!photoUrl;if(photoUrl)$('preview-photo').src=photoUrl;updateNewspaperPreview();});
 $('save').addEventListener('click',async()=>{if(!user)return notice('Please sign in first.');const d={...values(),editor_id:user.id,image_path:savedImagePath,source_article_id:sourceArticleId,updated_at:new Date().toISOString()};if(current)d.id=current;notice('Saving cloud draft...');if(pendingImage){if(!['image/jpeg','image/png','image/webp'].includes(pendingImage.type)||pendingImage.size>5242880){notice('Choose a JPG, PNG, or WebP image under 5 MB.');return;}const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[pendingImage.type];const path=user.id+'/'+crypto.randomUUID()+'.'+ext;const {error:uploadError}=await db.storage.from(bucket).upload(path,pendingImage,{contentType:pendingImage.type,upsert:false});if(uploadError){notice('Image upload failed: '+uploadError.message);return;}d.image_path=path;}const {data,error}=await db.from('tribune_article_drafts').upsert(d).select('id').single();if(error){if(pendingImage&&d.image_path!==savedImagePath)await db.storage.from(bucket).remove([d.image_path]);notice('Cloud save failed: '+error.message);return;}const previous=savedImagePath;savedImagePath=d.image_path;pendingImage=null;if(previous&&previous!==savedImagePath)await db.storage.from(bucket).remove([previous]);current=data.id;await refresh();notice('Draft and image saved securely to the newsroom cloud. Nothing published.');});
 $('new').addEventListener('click',()=>{current=null;sourceArticleId=null;for(const f of ['headline','summary','story'])$(f).value='';$('author').value='Frank “The Hammer” Haggerty';$('placement').value='main';for(const c of $('categories').querySelectorAll('input'))c.checked=false;clearPhoto();preview();notice('New blank article.');});
+$('standalone-proof').addEventListener('click',async()=>{
+ if(!user)return notice('Sign in before previewing a standalone story.');
+ const d=values();
+ if(!d.headline.trim()||!d.story.trim())return notice('Add a headline and full story before previewing.');
+ // A small local image may be included in the private tab proof. Larger images
+ // remain in the editor; the story can still be previewed without an image.
+ let imageDataUrl=null;
+ const imageFile=pendingImage;
+ if(imageFile&&imageFile.size<=900000&&['image/jpeg','image/png','image/webp'].includes(imageFile.type)){
+  imageDataUrl=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(imageFile);});
+ }
+ try{
+  sessionStorage.setItem('tribune_standalone_proof',JSON.stringify({...d,imageDataUrl}));
+  window.open('standalone-article-proof.html','_blank','noopener');
+  notice('Opened a private standalone article proof. Nothing was published.');
+ }catch(error){notice('Could not open article proof: '+error.message);}
+});
 $('export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(values(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='tribune-article-draft.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notice('Draft exported as JSON.');});
 preview();await signedIn();
 
