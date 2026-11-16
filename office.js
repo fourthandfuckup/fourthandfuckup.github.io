@@ -47,23 +47,90 @@ const section = Array.from(document.querySelectorAll('section, div')).find(el =>
     if (!response.ok) throw new Error(report.error || 'Report unavailable');
 
     section.replaceChildren();
-
-    const summary = document.createElement('p');
-    summary.textContent =
-      `Last 30 days — Visitors: ${report.activeUsers} | Page views: ${report.pageViews} | Sessions: ${report.sessions}`;
-    section.appendChild(summary);
-
-    const heading = document.createElement('h3');
-    heading.textContent = 'Most Read Pages';
-    section.appendChild(heading);
-
-    const list = document.createElement('ol');
-    for (const page of report.popularPages || []) {
-      const item = document.createElement('li');
-      item.textContent = `${page.title}: ${page.views} views`;
-      list.appendChild(item);
+    section.classList.add('circulation-dashboard');
+    const number = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString('en-CA') : '—';
+    const make = (tag, className, label) => {
+      const el = document.createElement(tag);
+      if (className) el.className = className;
+      if (label !== undefined) el.textContent = label;
+      return el;
+    };
+    const header = make('div', 'circulation-header');
+    header.append(make('div', 'circulation-eyebrow', 'THE TRIBUNE · PRIVATE READERSHIP INTELLIGENCE'));
+    header.append(make('h3', '', 'THE READERSHIP LEDGER'));
+    header.append(make('p', '', 'Follow the foot traffic, discover what catches readers’ eyes, and see which stories earn another look. Figures come from Google Analytics.'));
+    section.append(header);
+    const metrics = make('div', 'circulation-metrics');
+    for (const [label, value, detail] of [
+      ['READERS', report.activeUsers, 'Active users · last 30 days'],
+      ['PAGE VIEWS', report.pageViews, 'Pages opened · last 30 days'],
+      ['VISITS', report.sessions, 'Sessions · last 30 days'],
+      ['PAGES PER VISIT', Number(report.sessions) > 0 ? (Number(report.pageViews) / Number(report.sessions)).toFixed(1) : '—', 'Page views ÷ sessions']
+    ]) {
+      const card = make('div', 'circulation-metric');
+      card.append(make('span', 'circulation-metric-label', label), make('strong', '', label === 'PAGES PER VISIT' ? String(value) : number(value)), make('small', '', detail));
+      metrics.append(card);
     }
-    section.appendChild(list);
+    section.append(metrics);
+    const trend = make('div', 'circulation-panel');
+    trend.append(make('h4', '', 'DAILY FOOT TRAFFIC'));
+    const daily = Array.isArray(report.dailyTraffic) ? report.dailyTraffic : [];
+    if (daily.length) {
+      const chart = make('div', 'circulation-daily-chart');
+      const maximum = Math.max(1, ...daily.map(x => Number(x.views) || 0));
+      for (const day of daily) {
+        const column = make('div', 'circulation-day');
+        const bar = make('div', 'circulation-day-bar');
+        bar.style.height = Math.max(2, (Number(day.views) || 0) / maximum * 100) + '%';
+        bar.title = String(day.date || '') + ': ' + number(day.views) + ' page views';
+        column.append(bar, make('small', '', String(day.label || day.date || '')));
+        chart.append(column);
+      }
+      trend.append(chart);
+    } else {
+      trend.append(make('p', 'circulation-unavailable', 'Daily breakdown is not yet available from the reporting service.'));
+    }
+    section.append(trend);
+    const most = make('div', 'circulation-panel');
+    most.append(make('h4', '', 'MOST-WANTED STORIES & PAGES'));
+    most.append(make('p', 'circulation-subhead', 'Ranked by page views in the past 30 days.'));
+    const pages = Array.isArray(report.popularPages) ? report.popularPages : [];
+    if (pages.length) {
+      const max = Math.max(1, ...pages.map(p => Number(p.views) || 0));
+      pages.forEach((page, index) => {
+        const row = make('div', 'circulation-story');
+        const info = make('div', 'circulation-story-info');
+        info.append(make('span', 'circulation-story-rank', String(index + 1).padStart(2, '0')), make('span', 'circulation-story-title', String(page.title || 'Untitled')));
+        row.append(info, make('strong', 'circulation-story-views', number(page.views) + ' views'));
+        const track = make('div', 'circulation-story-track');
+        const fill = make('div', 'circulation-story-fill');
+        fill.style.width = Math.max(1, (Number(page.views) || 0) / max * 100) + '%';
+        track.append(fill);
+        row.append(track);
+        most.append(row);
+      });
+    } else {
+      most.append(make('p', 'circulation-unavailable', 'No page-view rankings available yet.'));
+    }
+    section.append(most);
+    const additional = make('div', 'circulation-extra-grid');
+    for (const [title, data, fallback] of [
+      ['WHERE READERS COME FROM', report.trafficSources, 'Traffic sources (Instagram, Google, direct and other) are not yet included in the reporting service.'],
+      ['RETURNING READERS', report.returningReaders, 'Returning-reader statistics are not yet included in the reporting service.'],
+      ['TIP LINE ENGAGEMENT', report.tipLineEngagement, 'Tip Line engagement is not yet included in the reporting service.']
+    ]) {
+      const panel = make('div', 'circulation-panel');
+      panel.append(make('h4', '', title));
+      if (data !== undefined && data !== null) {
+        if (Array.isArray(data)) {
+          for (const entry of data) panel.append(make('p', '', String(entry.source || entry.label || entry.name || 'Other') + ': ' + number(entry.sessions ?? entry.value ?? entry.count)));
+        } else if (typeof data === 'object') {
+          for (const [key, value] of Object.entries(data)) panel.append(make('p', '', key.replace(/([A-Z])/g, ' $1') + ': ' + number(value)));
+        } else panel.append(make('strong', '', number(data)));
+      } else panel.append(make('p', 'circulation-unavailable', fallback));
+      additional.append(panel);
+    }
+    section.append(additional);
     await loadSubscriberCounts();
   } catch (error) {
     section.textContent = `Circulation report unavailable: ${error.message}`;
