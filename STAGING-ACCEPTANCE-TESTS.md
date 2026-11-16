@@ -39,3 +39,11 @@ Live main and live database must remain unchanged.
 - **BLOCKER:** Confirm public article/comic/crossword continuity and data backup strategy before merging. Keep safety lock until release authorization and verified protections.
 - **BLOCKER:** Production-staging code still contains preview-named localStorage layout keys; ensure editorial draft separation and clean production state before allowing editor workflows.
 - Live main and live published data have not been intentionally changed.
+
+## Draft-isolation implementation prepared (not deployed)
+- Production edition manager now targets `tribune_prod_editions`, `tribune_prod_article_drafts`, `tribune_prod_comic_drafts`, `tribune_prod_crossword_drafts`, and `tribune_prod_edition_comics`.
+- Production article editor now targets `tribune_prod_article_drafts`.
+- Production editorial layout localStorage keys use `tribune-production-*`, not preview keys. Published layout reader uses the same new keys.
+- Added `PRODUCTION-DRAFT-ISOLATION.sql` with empty production-only draft tables, RLS policies, editor-only grants and assignment foreign keys. **Migration not executed**; live database remains untouched.
+- Database read-only verification: live published edition count 0, preview published count 2, shared draft edition count 1, production-only draft table does not yet exist. These are point-in-time counts.
+- Publication lock still active. Before deployment: review migration with schema tooling, execute after explicit approval, verify policies/API grants, test authorized editor workflow and safe publication using isolated test setup. Do not copy preview drafts or published test content.
