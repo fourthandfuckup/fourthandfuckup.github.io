@@ -118,7 +118,7 @@ function commentCard(c,{moderate=false,report=null}={}){
       actions.append(button('REPLY AS FRANK',async()=>{
         let form=card.querySelector('.office-reply');if(form){form.remove();return;}
         form=node('form',undefined,'office-reply');const label=node('label','FRANK’S OFFICIAL REPLY');const area=node('textarea');area.maxLength=1200;area.required=true;area.placeholder='The Hammer has entered the conversation…';const send=node('button','PUBLISH FRANK’S REPLY');send.type='submit';const cancel=node('button','CANCEL');cancel.type='button';cancel.addEventListener('click',()=>form.remove());
-        form.addEventListener('submit',async e=>{e.preventDefault();if(!area.value.trim())return;send.disabled=true;try{await editorAction('editor_reply',{articleSlug:c.article_slug,parentId:c.id,body:area.value.trim()});await reloadDesks();}catch(err){alert(err.message);send.disabled=false;}});
+        form.addEventListener('submit',async e=>{e.preventDefault();if(!area.value.trim())return;if(!confirm('STEP 1 OF 2 — Review Frank’s reply. It will become visible to readers of this article. Continue to final approval?'))return;if(!confirm('STEP 2 OF 2 — FINAL APPROVAL: Publish this reply publicly now?'))return;send.disabled=true;try{await editorAction('editor_reply',{articleSlug:c.article_slug,parentId:c.id,body:area.value.trim()});await reloadDesks();}catch(err){alert(err.message);send.disabled=false;}});
         form.append(label,area,send,cancel);card.append(form);area.focus();
       }));
     }
