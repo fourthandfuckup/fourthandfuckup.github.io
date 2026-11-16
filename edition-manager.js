@@ -34,12 +34,12 @@ async function exportReleasePackage(){
  if(!edition)return msg('Could not locate the saved edition. Refresh Saved Edition Drafts.');
  button.disabled=true;msg('Building private edition package…');
  try{
- const layoutKeys=['tribune-preview-department-headlines','tribune-preview-department-draft-ids','tribune-preview-department-supporting'];
- const stored=JSON.parse(localStorage.getItem('tribune-preview-edition-layout:'+current)||'null');
+ const layoutKeys=['tribune-production-department-headlines','tribune-production-department-draft-ids','tribune-production-department-supporting'];
+ const stored=JSON.parse(localStorage.getItem('tribune-production-edition-layout:'+current)||'null');
  const layout={};for(const key of layoutKeys){let value=stored?.[key];if(!value){try{value=JSON.parse(localStorage.getItem(key)||'{}')}catch{value={}}}layout[key]=value;}
  const ids=new Set([edition.main_article_id,edition.bulletin_left_id,edition.bulletin_right_id].filter(Boolean));
- for(const id of Object.values(layout['tribune-preview-department-draft-ids']||{}))if(id)ids.add(id);
- for(const items of Object.values(layout['tribune-preview-department-supporting']||{}))if(Array.isArray(items))for(const a of items)if(a.id)ids.add(a.id);
+ for(const id of Object.values(layout['tribune-production-department-draft-ids']||{}))if(id)ids.add(id);
+ for(const items of Object.values(layout['tribune-production-department-supporting']||{}))if(Array.isArray(items))for(const a of items)if(a.id)ids.add(a.id);
  const {data:rows,error}=ids.size?await db.from('tribune_prod_article_drafts').select('id,headline,author,summary,story,categories,image_path,placement').in('id',[...ids]):{data:[],error:null};
  if(error)throw Error('Could not retrieve articles: '+error.message);
  const found=new Set((rows||[]).map(a=>a.id)),missing=[...ids].filter(id=>!found.has(id));
@@ -64,7 +64,7 @@ $('signout').onclick=async()=>{await db.auth.signOut();user=null;await auth();};
 $('save').onclick=save;$('new').onclick=clear;$('refresh-articles').onclick=articlesLoad;for(let id of ['volume','issue','date'])$(id).addEventListener('input',proof);proof();auth();
 const comicBucket='tribune-comic-drafts';
 let publishedComicLibrary=[];
-const reuseKey=id=>'tribune-preview-reused-comics:'+id;
+const reuseKey=id=>'tribune-production-reused-comics:'+id;
 function readReusedComics(id){try{const x=JSON.parse(localStorage.getItem(reuseKey(id))||'[]');return Array.isArray(x)?x:[]}catch{return []}}
 function saveReusedComics(id){if(!id)return;const ids=[...document.querySelectorAll('.published-comic-check:checked')].map(x=>x.value);localStorage.setItem(reuseKey(id),JSON.stringify(ids));}
 function renderPublishedComicChoices(){
@@ -217,9 +217,9 @@ async function previewEdition(edition){
  const comicProof=$('private-comic-proof'),crosswordProof=$('private-crossword-proof');
  comicProof.replaceChildren();crosswordProof.replaceChildren();
  const selectedComicIds=[...(comicLinks.data||[]).map(x=>x.comic_id),...readReusedComics(edition.id)];
- let savedOrder=[];try{savedOrder=JSON.parse(localStorage.getItem('tribune-preview-comic-order')||'[]')}catch{}
+ let savedOrder=[];try{savedOrder=JSON.parse(localStorage.getItem('tribune-production-comic-order')||'[]')}catch{}
  if(!Array.isArray(savedOrder))savedOrder=[];
- const leadId=localStorage.getItem('tribune-preview-featured-comic')||'';
+ const leadId=localStorage.getItem('tribune-production-featured-comic')||'';
  const orderedComicIds=[...selectedComicIds].sort((a,b)=>{
   if(savedOrder.length){const ai=savedOrder.indexOf(a),bi=savedOrder.indexOf(b);return (ai<0?9999:ai)-(bi<0?9999:bi);}
   return Number(b===leadId)-Number(a===leadId);
@@ -290,12 +290,12 @@ async function publishPreview(e){
  if(comicIds.length){const {data:comicRows,error:comicError}=await db.from('tribune_prod_comic_drafts').select('id,series,title,image_path').in('id',comicIds);if(comicError)return msg('Publishing stopped: '+comicError.message);if((comicRows||[]).length!==comicIds.length)return msg('Publishing stopped: a selected comic could not be found.');for(const c of comicRows){const {data:file,error:downloadError}=await db.storage.from('tribune-comic-drafts').download(c.image_path);if(downloadError||!file)return msg('Publishing stopped: comic image unavailable: '+c.title+'. '+(downloadError?.message||''));const ext=(c.image_path.split('.').pop()||'png').toLowerCase();const safeExt=['png','jpg','jpeg','webp'].includes(ext)?ext:'png';const path='comics/'+c.id+'.'+safeExt;const {error:uploadError}=await db.storage.from('tribune-published-images').upload(path,file,{upsert:true,contentType:file.type||'image/png'});if(uploadError)return msg('Publishing stopped: comic image upload failed: '+uploadError.message);publishedComics.push({id:c.id,series:c.series,title:c.title,image_url:db.storage.from('tribune-published-images').getPublicUrl(path).data.publicUrl+'?v='+Date.now()});}}
  let publishedCrossword=null;
  if(e.crossword_draft_id){const {data:p,error:puzzleError}=await db.from('tribune_prod_crossword_drafts').select('id,title,puzzle').eq('id',e.crossword_draft_id).single();if(puzzleError||!p)return msg('Publishing stopped: selected crossword could not be loaded. '+(puzzleError?.message||''));publishedCrossword={id:p.id,title:p.title,puzzle:p.puzzle};}
- const order=(()=>{try{return JSON.parse(localStorage.getItem('tribune-preview-comic-order')||'[]')}catch{return []}})();if(Array.isArray(order)&&order.length)publishedComics.sort((a,b)=>{const ia=order.indexOf(a.id),ib=order.indexOf(b.id);return (ia<0?9999:ia)-(ib<0?9999:ib)});
+ const order=(()=>{try{return JSON.parse(localStorage.getItem('tribune-production-comic-order')||'[]')}catch{return []}})();if(Array.isArray(order)&&order.length)publishedComics.sort((a,b)=>{const ia=order.indexOf(a.id),ib=order.indexOf(b.id);return (ia<0?9999:ia)-(ib<0?9999:ib)});
  const byId=new Map((data||[]).map(a=>[a.id,a]));
- const layoutKeys=['tribune-preview-department-headlines','tribune-preview-department-draft-ids','tribune-preview-department-supporting'];
- const layout={};let snapshot=null;try{snapshot=JSON.parse(localStorage.getItem('tribune-preview-edition-layout:'+e.id)||'null')}catch{}
+ const layoutKeys=['tribune-production-department-headlines','tribune-production-department-draft-ids','tribune-production-department-supporting'];
+ const layout={};let snapshot=null;try{snapshot=JSON.parse(localStorage.getItem('tribune-production-edition-layout:'+e.id)||'null')}catch{}
  for(const key of layoutKeys){try{layout[key]=snapshot?.[key]||JSON.parse(localStorage.getItem(key)||'{}')}catch{layout[key]={}}}
- const departmentIds=[...new Set([...Object.values(layout['tribune-preview-department-draft-ids']||{}),...Object.values(layout['tribune-preview-department-supporting']||{}).flatMap(items=>Array.isArray(items)?items.map(x=>x.id):[])].filter(Boolean))];
+ const departmentIds=[...new Set([...Object.values(layout['tribune-production-department-draft-ids']||{}),...Object.values(layout['tribune-production-department-supporting']||{}).flatMap(items=>Array.isArray(items)?items.map(x=>x.id):[])].filter(Boolean))];
  let departmentArticles=[];if(departmentIds.length){const {data:rows,error:deptError}=await db.from('tribune_prod_article_drafts').select('id,headline,author,summary,story,categories,image_path').in('id',departmentIds);if(deptError)return msg('Publishing stopped: '+deptError.message);if((rows||[]).length!==departmentIds.length)return msg('Publishing stopped: missing assigned department article');departmentArticles=rows||[];for(const a of departmentArticles){if(!a.image_path)continue;const {data:file,error:downloadError}=await db.storage.from('tribune-draft-images').download(a.image_path);if(downloadError||!file)return msg('Publishing stopped: department image missing for '+a.headline);const path='departments/'+e.id+'/'+a.id+'.'+(a.image_path.split('.').pop()||'webp');const {error:uploadError}=await db.storage.from('tribune-published-images').upload(path,file,{upsert:true,contentType:file.type});if(uploadError)return msg('Publishing stopped: '+uploadError.message);a.preview_image_url=db.storage.from('tribune-published-images').getPublicUrl(path).data.publicUrl+'?v='+Date.now();delete a.image_path;}}
  const content={main:byId.get(e.main_article_id)||null,left:byId.get(e.bulletin_left_id)||null,right:byId.get(e.bulletin_right_id)||null,comics:publishedComics,crossword:publishedCrossword,department_layout:layout,department_articles:departmentArticles};
  if(!content.main)return msg('A main headline is required before publishing.');
