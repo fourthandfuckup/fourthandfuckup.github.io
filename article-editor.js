@@ -22,6 +22,8 @@ $('standalone-proof').addEventListener('click',async()=>{
  if(!user)return notice('Sign in before previewing a standalone story.');
  const d=values();
  if(!d.headline.trim()||!d.story.trim())return notice('Add a headline and full story before previewing.');
+ const proofTab=window.open('about:blank','_blank');
+ if(!proofTab)return notice('Pop-up blocked. Allow pop-ups for the newsroom preview.');
  // A small local image may be included in the private tab proof. Larger images
  // remain in the editor; the story can still be previewed without an image.
  let imageDataUrl=null;
@@ -30,8 +32,7 @@ $('standalone-proof').addEventListener('click',async()=>{
   imageDataUrl=await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>resolve(null);reader.readAsDataURL(imageFile);});
  }
  try{
-  const proofTab=window.open('about:blank','_blank');
-  if(!proofTab)throw new Error('Pop-up blocked. Allow pop-ups for the newsroom preview.');
+
   proofTab.sessionStorage.setItem('tribune_standalone_proof',JSON.stringify({...d,imageDataUrl}));
   proofTab.opener=null;
   proofTab.location.replace('standalone-article-proof.html');
