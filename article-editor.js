@@ -23,11 +23,29 @@ preview();await signedIn();
 
 // Read-only front-page placement mock-up. All modifications are confined to this iframe.
 function updateNewspaperPreview(){const panel=$('page-preview-panel'),frame=$('newspaper-frame'),d=values();panel.hidden=!user;if(!user)return;const doc=frame.contentDocument;if(!doc||!doc.querySelector('.front-layout'))return;if(previousPlacement!==d.placement){previousPlacement=d.placement;frame.contentWindow.location.reload();return;}doc.querySelectorAll('.editor-preview-marker').forEach(el=>el.classList.remove('editor-preview-marker'));const text=(el,value)=>{if(el)el.textContent=value;};const marker=el=>{if(el){el.classList.add('editor-preview-marker');el.style.outline='3px dashed #8b3426';el.style.outlineOffset='4px';}};const title=d.headline||'YOUR HEADLINE WILL APPEAR HERE',summary=d.summary||'Your short teaser will appear here.';const img=photoUrl;
-if(d.placement==='main'){const root=doc.querySelector('.front-layout > section');text(root?.querySelector('.lead-headline'),title);text(root?.querySelector('.deck'),summary);text(root?.querySelector('.byline'),'BY '+(d.author||'TRIBUNE STAFF')+' · UNPUBLISHED DRAFT');text(root?.querySelector('.article-tease'),(d.story||'Your story will appear here.').slice(0,350));const art=root?.querySelector('.lead-graphic');if(art&&img){const photo=doc.createElement('img');photo.src=img;photo.alt='Draft article image';photo.style.cssText='width:100%;height:100%;object-fit:contain;filter:grayscale(1) sepia(.2)';art.replaceChildren(photo);}marker(root?.querySelector('.lead-headline'));$('page-preview-note').textContent='Main headline preview — fixed advertisement and other sections unchanged.';
+if(d.placement==='main'){const root=doc.querySelector('.front-layout > section');text(root?.querySelector('.lead-headline'),title);text(root?.querySelector('.deck'),summary);text(root?.querySelector('.byline'),'BY '+(d.author||'TRIBUNE STAFF')+' · UNPUBLISHED DRAFT');text(root?.querySelector('.article-tease'),(d.story||'Your story will appear here.').slice(0,350).replace(/\\s+\\S*$/,'')+'…');const art=root?.querySelector('.lead-graphic');if(art&&img){const photo=doc.createElement('img');photo.src=img;photo.alt='Draft article image';photo.style.cssText='width:100%;height:100%;object-fit:contain;filter:grayscale(1) sepia(.2)';art.replaceChildren(photo);}// The public investigation page is still the old static story. In this private
+// iframe preview, intercept its link and show the current saved/editor draft.
+const link=root?.querySelector('a[href*="investigation"],a[href*="seventy"],a[href*="case"]')||root?.querySelector('.read-more a, a.read-more');
+if(link){link.addEventListener('click',event=>{event.preventDefault();showFullDraftInPreview(frame,d,img);},{once:true});}
+marker(root?.querySelector('.lead-headline'));$('page-preview-note').textContent='Main headline preview — click the case-file link to read this draft, not the old published investigation.';
 }else if(d.placement==='bulletin-left'||d.placement==='bulletin-right'){const cards=doc.querySelectorAll('.front-investigations .front-case'),card=cards[d.placement==='bulletin-left'?0:1];if(card){text(card.querySelector('h3'),title);text(card.querySelector('p'),summary);text(card.querySelector('.kicker'),(d.categories[0]||'BENCHWARMER BULLETIN').toUpperCase()+' · UNPUBLISHED DRAFT');card.removeAttribute('href');marker(card);} $('page-preview-note').textContent='Benchwarmer Bulletin '+(d.placement==='bulletin-left'?'left':'right')+' preview — the opposite investigation stays unchanged.';
 }else{$('page-preview-note').textContent='This selection belongs on a category page, not a replaceable front-page feature. The permanent league navigation blocks remain unchanged.';}
 }
 $('newspaper-frame').addEventListener('load',updateNewspaperPreview);
+
+
+// Private iframe-only full-story view; never writes to the public site.
+function showFullDraftInPreview(frame,d,img){
+ const doc=frame.contentDocument;if(!doc)return;
+ const shell=doc.createElement('main');shell.style.cssText='max-width:780px;margin:24px auto;padding:30px;background:#f6e8c6;color:#23190f;font-family:Georgia,serif;line-height:1.65';
+ const back=doc.createElement('button');back.textContent='← BACK TO NEWSPAPER PREVIEW';back.style.cssText='cursor:pointer;padding:10px;margin-bottom:24px;background:#80291d;color:white;border:0;font-weight:bold';back.addEventListener('click',()=>frame.contentWindow.location.reload());shell.append(back);
+ const heading=doc.createElement('h1');heading.textContent=d.headline;heading.style.cssText='font-size:clamp(30px,5vw,52px);line-height:1.1';shell.append(heading);
+ const byline=doc.createElement('p');byline.textContent='BY '+(d.author||'TRIBUNE STAFF')+' · UNPUBLISHED DRAFT';shell.append(byline);
+ if(img){const photo=doc.createElement('img');photo.src=img;photo.alt='Article illustration';photo.style.cssText='max-width:100%;display:block;margin:20px auto';shell.append(photo);}
+ const body=doc.createElement('div');body.style.cssText='font-size:20px;overflow-wrap:anywhere';
+ for(const part of (d.story||'').split(/\n\s*\n/)){const p=doc.createElement(/^CHAPTER (ONE|TWO|THREE|FOUR|FIVE|SIX):/.test(part)?'h2':/^[A-Z0-9 ’'?!.,—-]+$/.test(part.trim())&&part.length<100?'h3':'p');p.textContent=part;p.style.margin='0 0 1.2em';body.append(p);}
+ shell.append(body);doc.body.replaceChildren(shell);doc.body.style.cssText='margin:0;background:#e5d09d';frame.style.height='1250px';
+}
 
 // One-time import of the existing front-page investigation. Never changes published files.
 $('import-74').addEventListener('click',async()=>{
