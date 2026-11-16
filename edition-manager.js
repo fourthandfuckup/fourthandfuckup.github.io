@@ -301,11 +301,11 @@ async function publishPreview(e){
  if(!content.main)return msg('A main headline is required before publishing.');
  const {data:existing,error:lookupError}=await db.from('tribune_live_published_editions').select('id').eq('source_edition_id',e.id).maybeSingle();
  if(lookupError)return msg('Publishing failed: '+lookupError.message);
- if(existing&&!confirm('This edition is already in the preview archive. Replace its published text with the current draft?'))return;
+ if(existing&&!confirm('This edition is already published on the LIVE newspaper. Replace its published content with this draft?'))return;
  const row={source_edition_id:e.id,edition_date:e.edition_date,volume_number:e.volume_number,issue_number:e.issue_number,title:e.title,content,published_by:user.id,published_at:new Date().toISOString()};
  const result=existing?await db.from('tribune_live_published_editions').update(row).eq('id',existing.id):await db.from('tribune_live_published_editions').insert(row);
  if(result.error)return msg('Publishing failed: '+result.error.message);
- msg('Published articles, '+publishedComics.length+' comic(s), and '+(publishedCrossword?'a crossword':'no crossword')+' to the PRODUCTION PUBLICATION (only after final authorization).');
+ msg('Published articles, '+publishedComics.length+' comic(s), and '+(publishedCrossword?'a crossword':'no crossword')+' to the LIVE newspaper.');
 }
 
 // Authenticated, private department proof. Never publishes, uploads, or saves a draft.
