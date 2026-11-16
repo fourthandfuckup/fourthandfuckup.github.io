@@ -29,3 +29,13 @@ This checklist applies to draft PR #5. Do not merge, publish an edition, or alte
 - Publishing lock must be deliberately replaced with a reviewed two-step production flow only after testing and explicit approval.
 
 Live main and live database must remain unchanged.
+
+## Final safety review update — 2026-11-16
+- User visually accepted homepage, original comics and crossword, Frank's Office, Sleeping Giant, Westfort Dynasty, Benchwarmer Bulletin, Wall of Shame, and Edition Manager appearance.
+- Fixed original-comic fallback and removed browser-stored unpublished department draft leakage in both staging and production-upgrade branches.
+- Corrected production publishing confirmations; staging lock still prevents publishing.
+- **BLOCKER:** Preview and production share `tribune_editions`, `tribune_article_drafts`, `tribune_comic_drafts`, and `tribune_crossword_drafts`. A production editor could accidentally select a preview test edition/drafts. Must isolate production drafts or implement enforced production-only draft scope before unlocking publication.
+- **BLOCKER:** Staging visual test did not exercise real publishing. No production write or isolated-database publishing test completed.
+- **BLOCKER:** Confirm public article/comic/crossword continuity and data backup strategy before merging. Keep safety lock until release authorization and verified protections.
+- **BLOCKER:** Production-staging code still contains preview-named localStorage layout keys; ensure editorial draft separation and clean production state before allowing editor workflows.
+- Live main and live published data have not been intentionally changed.
