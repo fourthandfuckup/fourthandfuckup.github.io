@@ -33,7 +33,7 @@ function publishedCategorySection(category){const matches=publishedCategoryStori
 function publishedDepartmentMarkup(name){
  const e=window.TRIBUNE_CURRENT_EDITION?.content;
  if(!e)return null;
- const layout=e.department_layout||{},headlines=layout['tribune-preview-department-headlines']||{},featured=layout['tribune-preview-department-draft-ids']||{},support=layout['tribune-preview-department-supporting']||{};
+ const layout=e.department_layout||{},headlines=layout['tribune-production-department-headlines']||{},featured=layout['tribune-production-department-draft-ids']||{},support=layout['tribune-production-department-supporting']||{};
  const byId=new Map((e.department_articles||[]).map(a=>[a.id,a]));
  const article=(a,featuredStory)=>{if(!a)return '';return '<article class="feature" style="margin:18px 0 28px;padding:22px;border:2px solid #51402a;background:#f4e7c9"><span class="kicker">'+(featuredStory?'DEPARTMENT FEATURE':'DEPARTMENT STORY')+'</span><h2>'+esc(a.headline||'')+'</h2><p class="byline">BY '+esc(a.author||'Tribune Staff')+'</p>'+(a.preview_image_url?'<img src="'+esc(a.preview_image_url)+'" alt="" style="max-width:100%;height:auto">':'')+'<p><strong>'+esc(a.summary||'')+'</strong></p><div style="white-space:pre-line">'+esc(a.story||'')+'</div></article>';};
  let html=article(byId.get(featured[name]),true);
