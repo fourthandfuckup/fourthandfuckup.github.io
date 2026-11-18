@@ -19,6 +19,42 @@ $('photo').addEventListener('change',()=>{if(photoUrl)URL.revokeObjectURL(photoU
 $('save').addEventListener('click',async()=>{if(!user)return notice('Please sign in first.');const d={...values(),editor_id:user.id,image_path:savedImagePath,source_article_id:sourceArticleId,updated_at:new Date().toISOString()};if(current)d.id=current;notice('Saving cloud draft...');if(pendingImage){if(!['image/jpeg','image/png','image/webp'].includes(pendingImage.type)||pendingImage.size>5242880){notice('Choose a JPG, PNG, or WebP image under 5 MB.');return;}const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[pendingImage.type];const path=user.id+'/'+crypto.randomUUID()+'.'+ext;const {error:uploadError}=await db.storage.from(bucket).upload(path,pendingImage,{contentType:pendingImage.type,upsert:false});if(uploadError){notice('Image upload failed: '+uploadError.message);return;}d.image_path=path;}const {data,error}=await db.from('tribune_prod_article_drafts').upsert(d).select('id').single();if(error){if(pendingImage&&d.image_path!==savedImagePath)await db.storage.from(bucket).remove([d.image_path]);notice('Cloud save failed: '+error.message);return;}const previous=savedImagePath;savedImagePath=d.image_path;pendingImage=null;if(previous&&previous!==savedImagePath)await db.storage.from(bucket).remove([previous]);current=data.id;await refresh();notice('Draft and image saved securely to the newsroom cloud. Nothing published.');});
 $('new').addEventListener('click',()=>{current=null;sourceArticleId=null;for(const f of ['headline','summary','story'])$(f).value='';$('author').value='Frank “The Hammer” Haggerty';$('placement').value='main';for(const c of $('categories').querySelectorAll('input'))c.checked=false;clearPhoto();preview();notice('New blank article.');});
 $('export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(values(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='tribune-article-draft.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notice('Draft exported as JSON.');});
+
+let publishBusy=false;
+$('publish-single').addEventListener('click',async()=>{
+ if(publishBusy)return;
+ if(!user||!current)return notice('Save the draft before publishing.');
+ if(pendingImage)return notice('Save your new image before publishing.');
+ const d=drafts.find(a=>a.id===current);
+ if(!d)return notice('Reload and save this draft before publishing.');
+ const v=values();
+ if(['headline','author','summary','story'].some(k=>String(v[k]).trim()!==String(d[k]||'').trim())||JSON.stringify(v.categories)!==JSON.stringify(d.categories||[])||v.placement!==d.placement)return notice('You have unsaved edits. Save the draft before publishing.');
+ if(!d.headline?.trim()||!d.story?.trim())return notice('A headline and full article are required.');
+ if(!confirm('STEP 1 OF 2: Publish "'+d.headline+'" as a standalone public article? This will NOT publish a new newspaper edition.'))return;
+ if(!confirm('STEP 2 OF 2: FINAL APPROVAL — Make this article LIVE on fourthandfuckup.com now?'))return;
+ publishBusy=true;$('publish-single').disabled=true;notice('Publishing standalone article...');
+ try{
+  let image_url=null;
+  if(d.image_path){
+   const {data:file,error:downloadError}=await db.storage.from(bucket).download(d.image_path);
+   if(downloadError||!file)throw Error('Could not read article image: '+(downloadError?.message||'No file'));
+   const ext=(d.image_path.split('.').pop()||'webp').toLowerCase();
+   const path='standalone/'+d.id+'.'+(['png','jpg','jpeg','webp'].includes(ext)?ext:'webp');
+   const {error:uploadError}=await db.storage.from('tribune-published-images').upload(path,file,{upsert:true,contentType:file.type||'image/webp'});
+   if(uploadError)throw Error('Could not publish image: '+uploadError.message);
+   image_url=db.storage.from('tribune-published-images').getPublicUrl(path).data.publicUrl+'?v='+Date.now();
+  }
+  const payload={source_draft_id:d.id,headline:d.headline,author:d.author||'Tribune Staff',summary:d.summary||'',story:d.story,categories:d.categories||[],image_url,published_by:user.id,published_at:new Date().toISOString()};
+  const {data:existing,error:checkError}=await db.from('tribune_live_standalone_articles').select('id').eq('source_draft_id',d.id).maybeSingle();
+  if(checkError)throw Error(checkError.message);
+  const result=existing?await db.from('tribune_live_standalone_articles').update(payload).eq('id',existing.id).select('id').single():await db.from('tribune_live_standalone_articles').insert(payload).select('id').single();
+  if(result.error)throw Error(result.error.message);
+  notice('LIVE: Article published without changing the newspaper edition. Open: '+location.origin+'/standalone-article.html?id='+result.data.id);
+  const link=document.createElement('a');link.href='standalone-article.html?id='+encodeURIComponent(result.data.id);link.target='_blank';link.rel='noopener';link.textContent=' VIEW PUBLISHED ARTICLE ↗';$('status').append(link);
+ }catch(e){notice('Publication failed: '+e.message);}
+ finally{publishBusy=false;$('publish-single').disabled=false;}
+});
+
 preview();await signedIn();
 
 // Read-only front-page placement mock-up. All modifications are confined to this iframe.
