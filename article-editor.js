@@ -44,7 +44,7 @@ $('publish-single').addEventListener('click',async()=>{
    if(uploadError)throw Error('Could not publish image: '+uploadError.message);
    image_url=db.storage.from('tribune-published-images').getPublicUrl(path).data.publicUrl+'?v='+Date.now();
   }
-  const payload={source_draft_id:d.id,headline:d.headline,author:d.author||'Tribune Staff',summary:d.summary||'',story:d.story,categories:d.categories||[],image_url,published_by:user.id,published_at:new Date().toISOString()};
+  const payload={source_draft_id:d.id,headline:d.headline,author:d.author||'Tribune Staff',summary:d.summary||'',story:d.story,categories:d.categories||[],placement:d.placement||'none',image_url,published_by:user.id,published_at:new Date().toISOString()};
   const {data:existing,error:checkError}=await db.from('tribune_live_standalone_articles').select('id').eq('source_draft_id',d.id).maybeSingle();
   if(checkError)throw Error(checkError.message);
   const result=existing?await db.from('tribune_live_standalone_articles').update(payload).eq('id',existing.id).select('id').single():await db.from('tribune_live_standalone_articles').insert(payload).select('id').single();
