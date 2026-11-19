@@ -12,16 +12,29 @@ function miniAd(k){let [title,quote]=ads[k]||ads.chafe;return `<aside class="min
 function item(a){return `<a class="archive-item" href="article.html?id=${encodeURIComponent(a.id)}"><span class="kicker">${esc(a.category)} · ${esc(a.type)}${a.status==='preview'?' · VERDICT PENDING':''}</span><h3>${esc(a.title)}</h3><p>${esc(a.deck)}</p><span class="byline">${datefmt(a.date)} · READ STORY →</span></a>`}
 function frontTipBanner(){return `<section class="front-tip-banner" aria-labelledby="frontTipTitle"><div class="front-tip-copy"><span class="front-tip-eyebrow">THE FOURTH & FUCKUP TRIBUNE · CONFIDENTIAL TIP LINE</span><h2 id="frontTipTitle">WITNESSED A FUCKUP?<br><em>OR ABSOLUTE FUCKING DOMINANCE?</em></h2><p>Every league has a story. Frank wants the receipts.</p><a class="front-tip-button" href="?section=tipline">SEND FRANK THE RECEIPTS <span aria-hidden="true">→</span></a><span class="front-tip-footnote">REAL LEAGUES. REAL EVIDENCE. NO BULLSHIT.</span></div></section>`}
 function previousHeadlineMarkup(currentMain, selectedSecondary, selectedDate){
- // Use the preceding published edition, never a private draft.
+ // Show the two most recent distinct published main headlines below the current one.
+ // Drafts never enter the public rotation; previously published stories remain in the archive.
  const rows=window.TRIBUNE_PUBLISHED_EDITIONS||[];
- const currentTitle=(currentMain?.headline||'').trim().toLowerCase();
- const previous=rows.slice(1).find(row=>row.content?.main?.headline&&row.content.main.headline.trim().toLowerCase()!==currentTitle);
- const old=selectedSecondary||previous?.content?.main;
- if(!old)return '';
- const href='preview-editions.html?edition='+encodeURIComponent(selectedSecondary?window.TRIBUNE_CURRENT_EDITION?.id:previous.id);
- const storyDate=selectedSecondary?selectedDate:previous.edition_date;
- const kicker=selectedSecondary?'SECONDARY FRONT-PAGE HEADLINE':'PREVIOUS FRONT-PAGE INVESTIGATION';
- return '<article class="front-secondary-headline" aria-label="Previous headline"><span class="kicker">${kicker}</span><div class="front-secondary-inner">'+(old.preview_image_url?'<a href="'+href+'"><img class="front-secondary-photo" src="'+esc(old.preview_image_url)+'" alt="Illustration for '+esc(old.headline)+'" loading="lazy"></a>':'')+'<div><h2><a href="'+href+'">'+esc(old.headline)+'</a></h2><p class="front-secondary-deck">'+esc(old.summary||'')+'</p><p class="byline">BY '+esc(old.author||'TRIBUNE STAFF')+' · '+datefmt(storyDate)+'</p><a class="readmore" href="'+href+'">READ THE INVESTIGATION →</a></div></div></article>';
+ const seen=new Set([(currentMain?.headline||'').trim().toLowerCase()]);
+ const prior=[];
+ if(selectedSecondary?.headline){
+  const key=selectedSecondary.headline.trim().toLowerCase();
+  if(!seen.has(key)){seen.add(key);prior.push({article:selectedSecondary,editionId:window.TRIBUNE_CURRENT_EDITION?.id,date:selectedDate});}
+ }
+ for(const row of rows){
+  const old=row.content?.main;
+  const key=(old?.headline||'').trim().toLowerCase();
+  if(!key||seen.has(key))continue;
+  seen.add(key);
+  prior.push({article:old,editionId:row.id,date:row.edition_date});
+  if(prior.length===2)break;
+ }
+ return prior.slice(0,2).map((entry,i)=>{
+  const old=entry.article;
+  const href='preview-editions.html?edition='+encodeURIComponent(entry.editionId);
+  const kicker=i===0?'SECONDARY FRONT-PAGE HEADLINE':'THIRD FRONT-PAGE HEADLINE';
+  return '<article class="front-secondary-headline" aria-label="'+(i===0?'Second':'Third')+' headline"><span class="kicker">'+kicker+'</span><div class="front-secondary-inner">'+(old.preview_image_url?'<a href="'+href+'"><img class="front-secondary-photo" src="'+esc(old.preview_image_url)+'" alt="Illustration for '+esc(old.headline)+'" loading="lazy"></a>':'')+'<div><h2><a href="'+href+'">'+esc(old.headline)+'</a></h2><p class="front-secondary-deck">'+esc(old.summary||'')+'</p><p class="byline">BY '+esc(old.author||'TRIBUNE STAFF')+' · '+datefmt(entry.date)+'</p><a class="readmore" href="'+href+'">READ THE INVESTIGATION →</a></div></div></article>';
+ }).join('');
 }
 
 function standaloneStoryCards(){const rows=(window.TRIBUNE_STANDALONE_ARTICLES||[]).filter(a=>a.placement!=='main');if(!rows.length)return '';return '<section class="weekly-strip" aria-label="Latest standalone investigations"><span class="kicker">BREAKING FROM FRANK\'S DESK · BETWEEN EDITIONS</span><h2>LATEST INVESTIGATIONS</h2><div class="front-investigations">'+rows.slice(0,4).map(a=>'<a class="front-case" href="standalone-article.html?id='+encodeURIComponent(a.id)+'"><span class="kicker">'+esc((a.categories||[])[0]||'TRIBUNE EXCLUSIVE')+'</span><h3>'+esc(a.headline)+'</h3><p>'+esc(a.summary||'')+'</p><span class="byline">READ ARTICLE →</span></a>').join('')+'</div></section>';}
