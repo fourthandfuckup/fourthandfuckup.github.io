@@ -58,20 +58,27 @@ function initTiplineTurnstile(){
  const widget=document.querySelector('#tipForm .cf-turnstile');
  if(!widget)return;
  const status=document.getElementById('tipResult');
+ let rendered=false;
  const render=()=>{
-  if(!widget.isConnected||widget.dataset.rendered==='true'||!window.turnstile)return;
+  if(rendered||!widget.isConnected||!window.turnstile)return;
   try{
    window.turnstile.render(widget,{sitekey:widget.dataset.sitekey,
     'error-callback':()=>{if(status){status.className='tip-result tip-error';status.textContent='Security verification could not load. Refresh the page and try again.';}},
     'expired-callback':()=>{if(status)status.textContent='Security verification expired. Please verify again.';}
    });
-   widget.dataset.rendered='true';
+   rendered=true;
   }catch(err){console.warn('Turnstile rendering failed',err);}
  };
- if(window.turnstile){window.turnstile.ready(render);return;}
  const script=document.querySelector('script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]');
- if(script)script.addEventListener('load',()=>window.turnstile?.ready(render),{once:true});
- else if(status){status.className='tip-result tip-error';status.textContent='Security verification unavailable. Please refresh and try again.';}
+ if(!script)return;
+ const started=Date.now();
+ const poll=()=>{
+  if(rendered||!widget.isConnected)return;
+  if(window.turnstile&&typeof window.turnstile.render==='function'){render();return;}
+  if(Date.now()-started<12000)setTimeout(poll,350);
+  else if(status){status.className='tip-result tip-error';status.textContent='Security verification unavailable. Refresh the page and try again.';}
+ };
+ poll();
 }
 function wireTipline(){const form=$('#tipForm');if(!form)return;const input=$('#tipEvidence'),summary=$('#tipFiles'),result=$('#tipResult');input.addEventListener('change',()=>{const files=[...input.files];summary.textContent=files.length?files.map(f=>f.name+' ('+(f.size/1048576).toFixed(1)+' MB)').join(' · '):'No screenshots selected.';result.textContent=''});form.addEventListener('submit',async e=>{e.preventDefault();const d=new FormData(form),files=[...input.files],email=String(d.get('contact')||'').trim(),story=String(d.get('story')||'').trim(),league=String(d.get('league')||'').trim(),team=String(d.get('team')||'').trim();const errors=[];if(!String(d.get('cf-turnstile-response')||''))errors.push('Complete the security verification.');if(!league||league.length>120||!team||team.length>120||story.length<15||story.length>6000)errors.push('Enter a league, team and story (15–6000 characters).');if(email&&(email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))errors.push('Enter a valid email address or leave it blank.');if(files.length>5||files.some(f=>f.size>10*1024*1024||!['image/png','image/jpeg','image/webp'].includes(f.type)))errors.push('Select up to five PNG, JPG or WebP files, each 10 MB or less.');if(errors.length){result.className='tip-result tip-error';result.textContent=errors.join(' ');return}const btn=form.querySelector('button[type=submit]');btn.disabled=true;btn.textContent='DELIVERING TO THE NEWSROOM…';result.className='tip-result';result.textContent='Securely sending your report…';try{const response=await fetch(TIP_ENDPOINT,{method:'POST',body:d});let body={};try{body=await response.json()}catch{}if(!response.ok)throw Error(body.error||'Newsroom delivery failed. Please try again later.');result.textContent='REPORT RECEIVED. Your confidential case reference is '+body.case_id+'. Frank will review the evidence before anything is published.';form.reset();if(window.turnstile)window.turnstile.reset();summary.textContent='No screenshots selected.'}catch(err){result.className='tip-result tip-error';result.textContent='NOT SENT: '+err.message}finally{btn.disabled=false;btn.textContent='SEND REPORT TO THE NEWSROOM →';result.scrollIntoView({behavior:'smooth',block:'nearest'})}})}
 
