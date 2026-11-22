@@ -113,6 +113,16 @@ const section = Array.from(document.querySelectorAll('section, div')).find(el =>
       most.append(make('p', 'circulation-unavailable', 'No page-view rankings available yet.'));
     }
     section.append(most);
+    const platforms = Array.isArray(report.trafficPlatforms) ? report.trafficPlatforms : [];
+    if (platforms.length) {
+      const platformPanel = make('div', 'circulation-panel');
+      platformPanel.append(make('h4', '', 'REFERRAL & SOCIAL PLATFORMS'));
+      platformPanel.append(make('p', 'circulation-subhead', 'Session source and medium · last 30 days. Includes direct and AI referrals.'));
+      for (const entry of platforms) {
+        platformPanel.append(make('p', '', String(entry.source || 'Unknown') + ' / ' + String(entry.medium || 'unknown') + ': ' + number(entry.sessions) + ' visits'));
+      }
+      section.append(platformPanel);
+    }
     const additional = make('div', 'circulation-extra-grid');
     for (const [title, data, fallback] of [
       ['WHERE READERS COME FROM', report.trafficSources, 'Traffic sources (Instagram, Google, direct and other) are not yet included in the reporting service.'],
